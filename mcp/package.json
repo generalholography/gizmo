@@ -1,0 +1,42 @@
+{
+  "name": "@gizmo3d/mcp",
+  "version": "0.3.0",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./stdioServer": {
+      "import": "./dist/server.js",
+      "types": "./dist/stdioServer.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run build:node && npm run build:types",
+    "build:node": "vite build --config vite.config.js",
+    "build:types": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "zod": "^3.25.76",
+    "@gizmo3d/engine": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "~5.6.2",
+    "vite": "^6.4.2",
+    "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "title": "Runtime Module Type JSON Demo",
+  "description": "Demonstrates a persisted custom field module type stored directly in world JSON.",
+  "tags": [
+    "demo",
+    "runtime-module-types"
+  ],
+  "brandColors": [
+    "#1f2937",
+    "#8ec5ff"
+  ],
+  "dimensions": [
+    {
+      "name": "main",
+      "gravity": -9.81,
+      "useDayNightCycle": false,
+      "sky": {
+        "color": "#dbeafe",
+        "sun": {
+          "color": "#ffffff",
+          "intensity": 0.9,
+          "timeOfDay": 1200
+        },
+        "clouds": {
+          "color": "#ffffff",
+          "coverage": 0.2
+        },
+        "stars": {
+          "intensity": 0
+        }
+      },
+      "chunks": [
+        {
+          "chunkId": "main",
+          "bounds": null,
+          "entities": [
+            {
+              "Info": {
+                "name": "Pulse Terrain",
+                "description": "Terrain displaced by a persisted custom field type."
+              },
+              "Transform": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "Body": {
+                "type": "composite",
+                "params": {
+                  "parts": [
+                    {
+                      "geometry": {
+                        "type": "displacedPlane",
+                        "params": {
+                          "lengthX": 16,
+                          "lengthZ": 16,
+                          "field": "pulseMask"
+                        }
+                      },
+                      "material": {
+                        "type": "solid",
+                        "params": {
+                          "color": "#60a5fa",
+                          "roughness": 0.9
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "MotionSource": {
+                "type": "static",
+                "params": {}
+              }
+            }
+          ],
+          "entityCount": 1,
+          "version": 1,
+          "updatedAt": 0
+        }
+      ]
+    }
+  ],
+  "activeDimension": "main",
+  "achievements": [],
+  "moduleTypes": [
+    {
+      "moduleName": "field",
+      "typeName": "radialPulse",
+      "description": "Simple radial field that returns amplitude inside a radius and zero outside.",
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "radius": {
+            "type": "number"
+          },
+          "amplitude": {
+            "type": "number"
+          }
+        }
+      },
+      "factorySource": "(params) => ({ sample3D(x, y, z) { const r = Math.sqrt(x * x + z * z); return r <= (params.radius ?? 1) ? (params.amplitude ?? 1) : 0; } })"
+    }
+  ],
+  "modules": {
+    "field": [
+      {
+        "name": "pulseMask",
+        "definition": {
+          "type": "radialPulse",
+          "params": {
+            "radius": 0.35,
+            "amplitude": 1.5
+          }
+        }
+      }
+    ]
+  },
+  "engineVersion": "0.3.0"
+}

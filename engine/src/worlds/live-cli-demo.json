@@ -1,0 +1,441 @@
+{
+  "title": "CLI Live Demo",
+  "description": "A small demo scene authored through the live CLI session.",
+  "tags": [],
+  "brandColors": [
+    "#87ceeb",
+    "#fffacd"
+  ],
+  "dimensions": [
+    {
+      "name": "main",
+      "gravity": -9.81,
+      "useDayNightCycle": false,
+      "sky": {
+        "color": 8900331,
+        "sun": {
+          "color": 16775885,
+          "intensity": 1,
+          "timeOfDay": 1200
+        },
+        "clouds": {
+          "color": 16777215,
+          "coverage": 0.65
+        },
+        "stars": {
+          "intensity": 0
+        }
+      },
+      "chunks": [
+        {
+          "chunkId": "main",
+          "bounds": null,
+          "entities": [
+            {
+              "_meta": {
+                "serializedAt": 1774297537139,
+                "engineVersion": "0.3.0",
+                "storesSchemaVersion": 1
+              },
+              "Body": {
+                "type": "composite",
+                "params": {
+                  "parts": [
+                    {
+                      "geometry": {
+                        "type": "box",
+                        "params": {
+                          "lengthX": 14,
+                          "lengthY": 0.3,
+                          "lengthZ": 14
+                        }
+                      },
+                      "material": {
+                        "type": "solid",
+                        "params": {
+                          "color": "#243b53"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "Info": {
+                "name": "Demo Platform",
+                "description": "No description"
+              },
+              "MotionSource": {
+                "type": "static",
+                "params": {}
+              },
+              "StableID": {
+                "id": 0
+              },
+              "Transform": {
+                "x": 0,
+                "y": -0.15000000596046448,
+                "z": 0,
+                "qx": 0,
+                "qy": 0,
+                "qz": 0,
+                "qw": 1,
+                "sx": 1,
+                "sy": 1,
+                "sz": 1
+              }
+            },
+            {
+              "_meta": {
+                "serializedAt": 1774297537139,
+                "engineVersion": "0.3.0",
+                "storesSchemaVersion": 1
+              },
+              "Body": {
+                "type": "composite",
+                "params": {
+                  "parts": [
+                    {
+                      "geometry": {
+                        "type": "cylinder",
+                        "params": {
+                          "radius": 1.2,
+                          "height": 1.6
+                        }
+                      },
+                      "material": {
+                        "type": "solid",
+                        "params": {
+                          "color": "#486581"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "Info": {
+                "name": "Center Pedestal",
+                "description": "No description"
+              },
+              "MotionSource": {
+                "type": "static",
+                "params": {}
+              },
+              "StableID": {
+                "id": 1
+              },
+              "Transform": {
+                "x": 0,
+                "y": 0.800000011920929,
+                "z": 0,
+                "qx": 0,
+                "qy": 0,
+                "qz": 0,
+                "qw": 1,
+                "sx": 1,
+                "sy": 1,
+                "sz": 1
+              }
+            },
+            {
+              "_meta": {
+                "serializedAt": 1774297537139,
+                "engineVersion": "0.3.0",
+                "storesSchemaVersion": 1
+              },
+              "Body": {
+                "type": "composite",
+                "params": {
+                  "parts": [
+                    {
+                      "geometry": {
+                        "type": "sphere",
+                        "params": {
+                          "radius": 0.9
+                        }
+                      },
+                      "material": {
+                        "type": "solid",
+                        "params": {
+                          "color": "#3ec1d3"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "Info": {
+                "name": "Signal Orb",
+                "description": "No description"
+              },
+              "MotionSource": {
+                "type": "static",
+                "params": {}
+              },
+              "StableID": {
+                "id": 2
+              },
+              "Transform": {
+                "x": 0,
+                "y": 2.700000047683716,
+                "z": 0,
+                "qx": 0,
+                "qy": 0,
+                "qz": 0,
+                "qw": 1,
+                "sx": 1,
+                "sy": 1,
+                "sz": 1
+              }
+            },
+            {
+              "_meta": {
+                "serializedAt": 1774297537140,
+                "engineVersion": "0.3.0",
+                "storesSchemaVersion": 1
+              },
+              "Body": {
+                "type": "composite",
+                "params": {
+                  "parts": [
+                    {
+                      "geometry": {
+                        "type": "cone",
+                        "params": {
+                          "radius": 0.9,
+                          "height": 2.2
+                        }
+                      },
+                      "material": {
+                        "type": "solid",
+                        "params": {
+                          "color": "#f08c00"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "Info": {
+                "name": "Left Beacon",
+                "description": "No description"
+              },
+              "MotionSource": {
+                "type": "static",
+                "params": {}
+              },
+              "StableID": {
+                "id": 3
+              },
+              "Transform": {
+                "x": -3.5,
+                "y": 1.100000023841858,
+                "z": 1.5,
+                "qx": 0,
+                "qy": 0,
+                "qz": 0,
+                "qw": 1,
+                "sx": 1,
+                "sy": 1,
+                "sz": 1
+              }
+            },
+            {
+              "_meta": {
+                "serializedAt": 1774297537140,
+                "engineVersion": "0.3.0",
+                "storesSchemaVersion": 1
+              },
+              "Body": {
+                "type": "composite",
+                "params": {
+                  "parts": [
+                    {
+                      "geometry": {
+                        "type": "cylinder",
+                        "params": {
+                          "radius": 0.7,
+                          "height": 2.5
+                        }
+                      },
+                      "material": {
+                        "type": "solid",
+                        "params": {
+                          "color": "#d6336c"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "Info": {
+                "name": "Right Column",
+                "description": "No description"
+              },
+              "MotionSource": {
+                "type": "static",
+                "params": {}
+              },
+              "StableID": {
+                "id": 4
+              },
+              "Transform": {
+                "x": 3.5,
+                "y": 1.25,
+                "z": -1.5,
+                "qx": 0,
+                "qy": 0,
+                "qz": 0,
+                "qw": 1,
+                "sx": 1,
+                "sy": 1,
+                "sz": 1
+              }
+            },
+            {
+              "_meta": {
+                "serializedAt": 1774297537140,
+                "engineVersion": "0.3.0",
+                "storesSchemaVersion": 1
+              },
+              "Body": {
+                "type": "composite",
+                "params": {
+                  "parts": [
+                    {
+                      "geometry": {
+                        "type": "box",
+                        "params": {
+                          "lengthX": 1.6,
+                          "lengthY": 3,
+                          "lengthZ": 1.2
+                        }
+                      },
+                      "material": {
+                        "type": "solid",
+                        "params": {
+                          "color": "#7c3aed"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "Info": {
+                "name": "Rear Monolith",
+                "description": "No description"
+              },
+              "MotionSource": {
+                "type": "static",
+                "params": {}
+              },
+              "StableID": {
+                "id": 5
+              },
+              "Transform": {
+                "x": 0,
+                "y": 1.5,
+                "z": -4,
+                "qx": 0,
+                "qy": 0,
+                "qz": 0,
+                "qw": 1,
+                "sx": 1,
+                "sy": 1,
+                "sz": 1
+              }
+            },
+            {
+              "_meta": {
+                "serializedAt": 1774297537140,
+                "engineVersion": "0.3.0",
+                "storesSchemaVersion": 1
+              },
+              "Body": {
+                "type": "composite",
+                "params": {
+                  "parts": [
+                    {
+                      "geometry": {
+                        "type": "box",
+                        "params": {
+                          "lengthX": 1.1,
+                          "lengthY": 1.2,
+                          "lengthZ": 1.1
+                        }
+                      },
+                      "material": {
+                        "type": "solid",
+                        "params": {
+                          "color": "#22c55e"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "Info": {
+                "name": "Front Marker",
+                "description": "No description"
+              },
+              "MotionSource": {
+                "type": "static",
+                "params": {}
+              },
+              "StableID": {
+                "id": 6
+              },
+              "Transform": {
+                "x": 2.4000000953674316,
+                "y": 0.6000000238418579,
+                "z": 3.200000047683716,
+                "qx": 0,
+                "qy": 0,
+                "qz": 0,
+                "qw": 1,
+                "sx": 1,
+                "sy": 1,
+                "sz": 1
+              }
+            },
+            {
+              "_meta": {
+                "serializedAt": 1774297537140,
+                "engineVersion": "0.3.0",
+                "storesSchemaVersion": 1
+              },
+              "Info": {
+                "name": "Live MCP Smoke 1774297537128",
+                "description": "No description"
+              },
+              "MotionSource": {
+                "type": "static",
+                "params": {}
+              },
+              "StableID": {
+                "id": 7
+              },
+              "Transform": {
+                "x": 6,
+                "y": 1,
+                "z": 0,
+                "qx": 0,
+                "qy": 0,
+                "qz": 0,
+                "qw": 1,
+                "sx": 1,
+                "sy": 1,
+                "sz": 1
+              }
+            }
+          ],
+          "entityCount": 8,
+          "version": 1,
+          "updatedAt": 1774297537139
+        }
+      ]
+    }
+  ],
+  "activeDimension": "main",
+  "achievements": [],
+  "nextStableId": 8
+}

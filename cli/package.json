@@ -1,0 +1,42 @@
+{
+  "name": "@gizmo3d/cli",
+  "version": "0.3.0",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "bin": {
+    "gizmo": "dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run build:node && npm run build:browser && npm run copy:public && npm run copy:readme && npm run copy:license && npm run write-dist-package-json",
+    "build:browser": "vite build --config vite.browser.config.js",
+    "build:node": "vite build --config vite.node.config.js",
+    "cli": "npm run build && node dist/main.js",
+    "copy:public": "mkdir -p dist/public && cp -R ../engine/public/. dist/public/",
+    "copy:readme": "cp README.md dist/README.md",
+    "copy:license": "cp ../LICENSE dist/LICENSE",
+    "pack:dist": "npm run build && cd dist && npm pack",
+    "test": "vitest run",
+    "validate": "npm run build && node scripts/validateBuiltCli.mjs",
+    "validate:global": "node scripts/validateGlobalInstall.mjs",
+    "write-dist-package-json": "node scripts/writeDistPackageJson.mjs"
+  },
+  "dependencies": {
+    "vite": "^6.4.2",
+    "@gizmo3d/engine": "*",
+    "@gizmo3d/mcp": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "jsdom": "^26.1.0",
+    "typescript": "~5.6.2",
+    "vitest": "^3.2.4",
+    "zod": "^3.25.76"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

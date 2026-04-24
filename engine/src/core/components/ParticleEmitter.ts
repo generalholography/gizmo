@@ -1,0 +1,27 @@
+import { defineComponent, Types } from "bitecs";
+
+export const ParticleEmitter = defineComponent({
+  rate: Types.f32,
+  burst: Types.f32,
+  maxParticles: Types.ui16,
+  lifetime: Types.f32,
+  duration: Types.f32,
+  speedMin: Types.f32,
+  speedMax: Types.f32,
+  spread: Types.f32,
+  size: Types.f32,
+  opacity: Types.f32,
+  gravity: Types.f32,
+  colorR: Types.f32,
+  colorG: Types.f32,
+  colorB: Types.f32,
+  directionX: Types.f32,
+  directionY: Types.f32,
+  directionZ: Types.f32,
+  shapeType: Types.ui8,
+  shapeX: Types.f32,
+  shapeY: Types.f32,
+  shapeZ: Types.f32,
+  shapeRadius: Types.f32,
+  localSpace: Types.ui8,
+});
