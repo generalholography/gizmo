@@ -1,0 +1,94 @@
+# Getting Started
+
+This guide creates a local Gizmo world, starts a live browser-backed session,
+adds an entity, reads world state, and captures a screenshot.
+
+## Requirements
+
+- Node.js compatible with the repo and release workflow. The current release
+  workflow uses Node.js 22.
+- npm.
+- A trusted local workspace.
+
+Gizmo can execute JavaScript world files and runtime module factory source. Do
+not run these commands against untrusted repositories or world files.
+
+## Install the CLI
+
+```bash
+npm install -g @gizmo3d/cli
+gizmo --help
+```
+
+For repo development, use the local workspace instead:
+
+```bash
+npm install
+npm run build
+npm run cli --workspace=cli -- --help
+```
+
+## Create a World
+
+```bash
+gizmo init ./my-world
+cd ./my-world
+```
+
+This creates `world.json` and saves it as the default world for the workspace in
+`.gizmo/session.json`.
+
+## Start a Live Session
+
+```bash
+gizmo dev --no-open
+```
+
+`dev` starts a local live session, writes the active target to
+`.gizmo/session.json`, creates a run directory under `.gizmo/runs/`, and prints
+browser and MCP connection details.
+
+Open the printed browser URL in a browser, or use the printed MCP config with an
+MCP-compatible coding agent.
+
+## Inspect World State
+
+```bash
+gizmo resource world-state-summary
+gizmo resource entity-list
+gizmo resource component-catalog
+```
+
+Resources are read-only structured views of the active session.
+
+## Add an Entity
+
+```bash
+gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
+```
+
+Mutating commands in live mode persist the serialized world back to the backing
+file.
+
+## Control the Camera
+
+```bash
+gizmo camera get
+gizmo camera set --position '{"x":0,"y":8,"z":18}' --look-at '{"x":0,"y":4,"z":0}'
+```
+
+## Capture a Screenshot
+
+```bash
+gizmo snapshot
+```
+
+By default, screenshots are written to the active run under
+`.gizmo/runs/<run-id>/artifacts/`.
+
+## Next Steps
+
+- Read [Concepts](./concepts.md) for the core model.
+- Read [CLI overview](./cli/overview.md) for command families.
+- Read [MCP overview](./mcp/overview.md) for agent integrations.
+- Read [Engine overview](./engine/overview.md) if you want to embed the runtime.

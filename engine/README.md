@@ -1,116 +1,121 @@
-# vibe shell
-this is a simple starter repo that demonstrates a working three.js + rapier game engine.
-it is intended as a starting point for coding agent game implementation
+# @gizmo3d/engine
 
-## CLI
+`@gizmo3d/engine` is the Gizmo browser/runtime package. It contains the 3D
+engine, editor-facing APIs, world initialization and serialization, automation
+command/resource definitions, headless automation sessions, and versioned
+browser runtime bundles.
 
-The dedicated [cli package](../cli/README.md) now owns `gizmo` for both headless file editing and browser-backed live sessions.
+Use this package when you want to embed Gizmo in a browser app or build directly
+against engine/editor APIs. If you primarily want to create and edit worlds from
+the terminal, start with [`@gizmo3d/cli`](../cli/README.md).
 
-Common workflows:
-
-```bash
-# Start the recommended one-command local agent workflow
-gizmo dev ./world.json
-
-# Save a default world once for this workspace
-gizmo use /absolute/path/to/world.json
-
-# Start stdio MCP against a local world file
-gizmo --help
-gizmo mcp
-
-# Start a live browser-backed session
-gizmo live
-
-# Print MCP config for a saved world or live server
-gizmo mcp-config
-
-# Inspect or move the active viewport camera
-gizmo camera get
-gizmo camera set --position '{"x":0,"y":8,"z":18}' --look-at '{"x":0,"y":4,"z":0}'
-```
-
-Installed product flow:
+## Install
 
 ```bash
-npm install -g ./dist
-gizmo dev ./world.json
-gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
-gizmo snapshot --output /tmp/world.png
+npm install @gizmo3d/engine
 ```
 
-You can also package the distributable CLI/runtime bundle from `cli/dist`:
+## Minimal Browser Runtime
 
-```bash
-npm run pack:dist --workspace=cli
-npm run validate --workspace=cli
+```ts
+import { EngineMode, startEngine } from '@gizmo3d/engine';
+
+const canvas = document.querySelector('canvas');
+
+if (!canvas) {
+  throw new Error('Missing canvas element');
+}
+
+const engine = startEngine(canvas, {
+  mode: EngineMode.EDITOR,
+});
 ```
-
-Browser runtime bundles are versioned engine artifacts. Build them into the
-engine-owned output tree, then sync them into the private web app only when
-validating or deploying that app:
-
-```bash
-npm run build:package --workspace=engine
-npm run sync:engine-assets
-```
-
-Full CLI docs: [cli/README.md](../cli/README.md)
 
 ## Engine Modes
 
-The engine supports three modes:
-
-### Game Mode (default)
-Normal gameplay mode with player controls and full physics simulation.
-
 ```ts
-import { startEngine, EngineMode } from '@gizmo3d/engine';
-
-const engine = startEngine(canvas, { mode: EngineMode.GAME });
+import { EngineMode } from '@gizmo3d/engine';
 ```
 
-### Display Mode
-View-only mode with orbit controls, no player spawning. Useful for showcasing scenes.
+- `EngineMode.GAME`: gameplay mode with player controls and physics simulation.
+- `EngineMode.DISPLAY`: view-only mode for presenting scenes.
+- `EngineMode.EDITOR`: editing mode with fly controls, selection, transforms,
+  and editor UI integration.
+
+## World Initialization and Serialization
 
 ```ts
-const engine = startEngine(canvas, { mode: EngineMode.DISPLAY });
+import { initialize, serializeWorld } from '@gizmo3d/engine';
 ```
 
-### Editor Mode
-Scene editing mode with fly controls and entity manipulation.
+World definitions are the durable scene/simulation format shared by the engine,
+CLI, and MCP server. A world can include metadata, dimensions, entities,
+achievements, module definitions, stores, and runtime-facing configuration.
 
-```ts
-const engine = startEngine(canvas, { mode: EngineMode.EDITOR });
+JavaScript/MJS world scripts can execute code. Only load world scripts from
+trusted workspaces. Prefer JSON worlds for data-only interchange.
+
+## Automation APIs
+
+The package exports automation APIs under `@gizmo3d/engine/automation` and
+specific subpaths:
+
+- `@gizmo3d/engine/automation`
+- `@gizmo3d/engine/automation/world`
+- `@gizmo3d/engine/automation/definitions`
+- `@gizmo3d/engine/automation/commands`
+- `@gizmo3d/engine/automation/resources`
+- `@gizmo3d/engine/automation/session`
+- `@gizmo3d/engine/automation/headless`
+
+Automation commands are structured operations such as `add-entity`,
+`set-transform`, `modify-component`, and `set-viewport-camera`. Automation
+resources are read-only views such as `world-state-summary`, `entity-list`,
+`component-catalog`, `entity-bundle`, `render-screenshot`, and
+`viewport-camera`.
+
+The source of truth for these surfaces is:
+
+- `src/automation/definitions.ts`
+- `src/automation/commands.ts`
+- `src/automation/resourceCatalog.ts`
+- `src/automation/resources.ts`
+
+## Browser Runtime Artifacts
+
+Package builds emit versioned browser runtime artifacts under:
+
+```text
+dist/browser/<engine-version>/
 ```
 
-#### Editor Controls:
-- **WASD**: Move camera (relative to camera XZ plane)
-- **E**: Move up (relative to camera Y)
-- **Q**: Move down (relative to camera Y)
-- **Right Click + Drag**: Rotate camera (pitch and yaw, no roll)
-- **Left Click**: Select/deselect entity
-- **J**: Translate mode
-- **K**: Rotate mode
-- **L**: Scale mode
-- **X**: Toggle local/world space
-- **Shift (hold)**: Enable snapping (translation: 1 unit, rotation: 45°, scale: 0.5)
+Applications that load dynamic worlds should serve the runtime version that
+matches the package version they target.
 
-#### Editor Features:
-- No player spawning
-- Physics objects exist but don't simulate
-- Entity selection with visual transform gizmo
-- Real-time entity bundle viewing
-- Copy entity definition to clipboard
-- Export entire scene to JavaScript file
+## Local Development
 
-## Extending Modules
-New field, collider, mesh, or material types can be added with `registerType` on each module:
+From the repo root:
 
-```ts
-import { registerMeshType } from "./modules/mesh";
-
-registerMeshType("myShape", params => {
-  // return a THREE.BufferGeometry
-});
+```bash
+npm install
+npm run build --workspace=engine
+npm run test --workspace=engine
 ```
+
+To build the publishable package artifacts:
+
+```bash
+npm run build:package --workspace=engine
+```
+
+## Documentation
+
+- [Engine overview](../docs/engine/overview.md)
+- [Concepts](../docs/concepts.md)
+- [Architecture](../docs/architecture.md)
+- [Examples](../docs/examples.md)
+- [Security](../SECURITY.md)
+
+## License
+
+MIT
