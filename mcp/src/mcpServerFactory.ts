@@ -71,9 +71,9 @@ function toToolResult(result: { changed?: boolean; message?: string; text?: stri
 
 function describeTemplateResource(resourceName: string, stableId: number): string {
   if (resourceName === 'entity-render-screenshot') {
-    return `Viewport screenshot for StableID ${stableId}`;
+    return `Viewport screenshot for stable ID ${stableId}`;
   }
-  return `Entity bundle for StableID ${stableId}`;
+  return `Entity bundle for stable ID ${stableId}`;
 }
 
 export async function createAutomationMcpServer(

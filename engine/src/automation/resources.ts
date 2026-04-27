@@ -89,18 +89,15 @@ function readSessionInfo(ctx: ECSContext) {
   };
 }
 
-function readEntityBundle(ctx: ECSContext, params?: { eid?: number; stableId?: number }) {
-  const resolvedEid =
-    params?.eid ??
-    (params?.stableId !== undefined ? stableIdToEid(ctx, params.stableId) : undefined);
+function readEntityBundle(ctx: ECSContext, params?: { stableId?: number }) {
+  const resolvedEid = params?.stableId !== undefined ? stableIdToEid(ctx, params.stableId) : undefined;
 
   if (resolvedEid === undefined) {
-    throw new Error('entity-bundle resource requires eid or stableId parameter');
+    throw new Error('entity-bundle resource requires stableId parameter');
   }
 
   const bundle = getEntityBundle(ctx, resolvedEid, { includeRuntime: false });
   return {
-    eid: resolvedEid,
     stableId: eidToStableId(ctx, resolvedEid),
     label: resolveEntityLabel(bundle),
     bundle,
@@ -182,7 +179,6 @@ export const worldStateResources: AutomationResource[] = [
       return selectedEntities.map((eid) => {
         const bundle = getEntityBundle(ctx, eid, { includeRuntime: false });
         return {
-          eid,
           stableId: eidToStableId(ctx, eid),
           label: resolveEntityLabel(bundle),
           bundle,
@@ -207,7 +203,6 @@ export const worldStateResources: AutomationResource[] = [
         .map((partPath) => {
           const part = getPartAtPath(body, partPath);
           return {
-            eid: primaryEid,
             stableId: eidToStableId(ctx, primaryEid),
             label: resolveEntityLabel(bundle),
             partPath,
@@ -220,9 +215,9 @@ export const worldStateResources: AutomationResource[] = [
   },
   {
     name: 'entity-bundle',
-    description: 'Get full entity bundle by StableID or entity ID',
+    description: 'Get full entity bundle by stable ID',
     contentType: 'json',
-    handler: (ctx, params?: { eid?: number; stableId?: number }) => readEntityBundle(ctx, params),
+    handler: (ctx, params?: { stableId?: number }) => readEntityBundle(ctx, params),
   },
   {
     name: 'metadata',
@@ -252,16 +247,29 @@ export const worldStateResources: AutomationResource[] = [
   },
   {
     name: 'render-screenshot',
-    description: 'Capture a screenshot of the world or a single entity (optional stableId or eid).',
+    description: 'Capture a screenshot of the world, or of one entity when stableId is provided.',
     contentType: 'json',
-    handler: (ctx, params?: { eid?: number; stableId?: number }) => {
-      const resolvedEid =
-        params?.eid ??
-        (params?.stableId !== undefined ? stableIdToEid(ctx, params.stableId) : undefined);
+    handler: (ctx, params?: { stableId?: number }) => {
+      const resolvedEid = params?.stableId !== undefined ? stableIdToEid(ctx, params.stableId) : undefined;
       if (resolvedEid !== undefined) {
         return captureEntityScreenshot(ctx, resolvedEid);
       }
       return captureWorldScreenshot(ctx);
+    },
+  },
+  {
+    name: 'entity-render-screenshot',
+    description: 'Capture a screenshot focused on a single entity by stable ID.',
+    contentType: 'json',
+    handler: (ctx, params?: { stableId?: number }) => {
+      if (params?.stableId === undefined) {
+        throw new Error('entity-render-screenshot resource requires stableId parameter');
+      }
+      const resolvedEid = stableIdToEid(ctx, params.stableId);
+      if (resolvedEid === undefined) {
+        throw new Error(`Entity with stableId ${params.stableId} not found for entity-render-screenshot`);
+      }
+      return captureEntityScreenshot(ctx, resolvedEid);
     },
   },
   {

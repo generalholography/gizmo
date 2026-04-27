@@ -58,13 +58,13 @@ Spawner-focused examples live under `engine/src/worlds/spawners`:
 From the repo root after building:
 
 ```bash
-npm run cli --workspace=cli -- dev ./engine/src/worlds/live-cli-demo.json --no-open
+npm run cli --workspace=cli -- start ./engine/src/worlds/live-cli-demo.json --no-open
 ```
 
 Or with an installed CLI:
 
 ```bash
-gizmo dev /absolute/path/to/world.json --no-open
+gizmo start /absolute/path/to/world.json --no-open
 ```
 
 For JavaScript examples, remember that world scripts execute code. Only run

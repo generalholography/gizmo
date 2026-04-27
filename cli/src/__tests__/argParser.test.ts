@@ -25,9 +25,9 @@ describe('CLI arg parser', () => {
   });
 
   it('parses optional numbers and rejects invalid values', () => {
-    const parsed = parseCliArgs(['resource', '--eid', '42']);
-    expect(parseOptionalNumber(getStringFlag(parsed, 'eid'), 'eid')).toBe(42);
-    expect(() => parseOptionalNumber('nope', 'eid')).toThrow("Expected --eid to be a number, received 'nope'.");
+    const parsed = parseCliArgs(['resource', '--stable-id', '42']);
+    expect(parseOptionalNumber(getStringFlag(parsed, 'stable-id'), 'stable-id')).toBe(42);
+    expect(() => parseOptionalNumber('nope', 'stable-id')).toThrow("Expected --stable-id to be a number, received 'nope'.");
   });
 
   it('keeps use command positional arguments', () => {

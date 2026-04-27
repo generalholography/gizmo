@@ -81,6 +81,11 @@ The source of truth for these surfaces is:
 - `src/automation/resourceCatalog.ts`
 - `src/automation/resources.ts`
 
+Generated references:
+
+- [Automation commands](../docs/reference/automation-commands.generated.md)
+- [Automation resources](../docs/reference/automation-resources.generated.md)
+
 ## Browser Runtime Artifacts
 
 Package builds emit versioned browser runtime artifacts under:
@@ -111,6 +116,7 @@ npm run build:package --workspace=engine
 ## Documentation
 
 - [Engine overview](../docs/engine/overview.md)
+- [Automation API](../docs/engine/automation-api.md)
 - [Concepts](../docs/concepts.md)
 - [Architecture](../docs/architecture.md)
 - [Examples](../docs/examples.md)

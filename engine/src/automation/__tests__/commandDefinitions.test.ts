@@ -19,8 +19,8 @@ describe('Automation command definitions', () => {
   it('matches body part parameter names with builders', () => {
     const addBodyPart = ENGINE_EDITOR_AGENT_COMMAND_DEFINITIONS.find((entry) => entry.name === 'add-body-part');
     const insertBodyPart = ENGINE_EDITOR_AGENT_COMMAND_DEFINITIONS.find((entry) => entry.name === 'insert-body-part');
-    expect(addBodyPart?.parameters.map((param) => param.name)).toEqual(['eid', 'stableId', 'archetype', 'localPosition']);
-    expect(insertBodyPart?.parameters.map((param) => param.name)).toEqual(['eid', 'stableId', 'parentPath', 'part']);
+    expect(addBodyPart?.parameters.map((param) => param.name)).toEqual(['stableId', 'archetype', 'localPosition']);
+    expect(insertBodyPart?.parameters.map((param) => param.name)).toEqual(['stableId', 'parentPath', 'part']);
   });
 
   it('does not expose structural overrides for component edits', () => {

@@ -23,14 +23,14 @@ npm run cli --workspace=cli -- --help
 ## Quick Start
 
 ```bash
-gizmo init ./my-world
+mkdir my-world
 cd ./my-world
-gizmo dev --no-open
+gizmo start --no-open
 ```
 
-`gizmo dev` starts a local live session, writes the active target to
-`.gizmo/session.json`, creates a run directory under `.gizmo/runs/`, and prints
-browser and MCP setup details.
+In an empty folder, `gizmo start` creates `world.json`, writes the active target
+to `.gizmo/session.json`, starts a local live session, creates a run directory
+under `.gizmo/runs/`, and prints browser and MCP setup details.
 
 Follow-up commands reuse the active session:
 
@@ -46,8 +46,8 @@ gizmo snapshot
 ```text
 gizmo init       Create a world file and save it for the workspace
 gizmo use        Save a default world file for the workspace
-gizmo dev        Start the recommended live workflow
-gizmo live       Start a browser-backed live server
+gizmo start      Start the recommended live workflow
+gizmo serve      Start a browser-backed live server
 gizmo mcp        Start a stdio MCP server
 gizmo mcp-config Print MCP configuration
 gizmo call       Execute one automation command
@@ -87,16 +87,16 @@ gizmo use /absolute/path/to/world.json
 Target resolution order:
 
 1. `--world`
-2. `ENGINE_WORLD`
+2. `GIZMO_WORLD`
 3. `.gizmo/session.json`
 
 ## Live Sessions
 
 ```bash
-gizmo dev ./world.json --no-open
+gizmo start ./world.json --no-open
 ```
 
-`dev` is the recommended local workflow. It starts a live server, optionally
+`start` is the recommended local workflow. It starts a live server, optionally
 opens a browser, writes the active live session to `.gizmo/session.json`, creates
 an active run, and prints:
 
@@ -112,7 +112,7 @@ Live sessions bind to `127.0.0.1` by default and use a per-session token. Use
 The lower-level primitive is:
 
 ```bash
-gizmo live
+gizmo serve
 ```
 
 ## MCP
@@ -167,6 +167,11 @@ gizmo resources
 ```
 
 Automation commands and resources are defined by `@gizmo3d/engine`.
+
+Generated references:
+
+- [Automation commands](../docs/reference/automation-commands.generated.md)
+- [Automation resources](../docs/reference/automation-resources.generated.md)
 
 ## Camera and Screenshots
 
@@ -226,6 +231,8 @@ Remove or replace the older install, then reinstall `@gizmo3d/cli`.
 ## Documentation
 
 - [CLI overview](../docs/cli/overview.md)
+- [CLI commands](../docs/cli/commands.md)
+- [Live sessions](../docs/cli/live-sessions.md)
 - [Getting started](../docs/getting-started.md)
 - [MCP overview](../docs/mcp/overview.md)
 - [Agent workflows](../docs/agents/overview.md)

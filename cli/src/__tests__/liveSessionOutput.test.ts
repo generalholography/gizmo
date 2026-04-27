@@ -4,7 +4,7 @@ import { buildLiveSessionOutput } from '../liveSessionOutput';
 describe('buildLiveSessionOutput', () => {
   it('includes Codex browser hints and portable MCP config for live sessions', () => {
     const payload = buildLiveSessionOutput({
-      mode: 'live',
+      mode: 'serve',
       liveInfo: {
         mode: 'live',
         serverUrl: 'http://127.0.0.1:4318',
@@ -49,9 +49,9 @@ describe('buildLiveSessionOutput', () => {
     });
   });
 
-  it('tracks system browser launch metadata for dev sessions', () => {
+  it('tracks system browser launch metadata for start sessions', () => {
     const payload = buildLiveSessionOutput({
-      mode: 'dev',
+      mode: 'start',
       liveInfo: {
         mode: 'live',
         serverUrl: 'http://127.0.0.1:4318',
@@ -70,7 +70,7 @@ describe('buildLiveSessionOutput', () => {
       },
     });
 
-    expect(payload.mode).toBe('dev');
+    expect(payload.mode).toBe('start');
     expect(payload.browserOpened).toBe(true);
     expect(payload.browserOpen).toEqual({
       command: 'open',

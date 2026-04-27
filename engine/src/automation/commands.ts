@@ -70,7 +70,7 @@ const resolveTargetEid = (ctx: ECSContext, params: Record<string, any>, commandN
     }
     throw new Error(`Entity with StableID ${params.stableId} not found for ${commandName}`);
   }
-  throw new Error(`${commandName} requires eid or stableId`);
+  throw new Error(`${commandName} requires stableId`);
 };
 
 function getCommandManager(ctx: ECSContext): CommandManager {
@@ -505,9 +505,6 @@ const commandBuilders: Record<string, CommandBuilder> = {
     
     // Build params for resource handler
     const resourceParams: Record<string, any> = {};
-    if (params.eid !== undefined) {
-      resourceParams.eid = params.eid;
-    }
     if (params.stableId !== undefined) {
       resourceParams.stableId = params.stableId;
     }

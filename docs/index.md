@@ -18,9 +18,30 @@ Start here:
 Package docs:
 
 - [Engine overview](./engine/overview.md)
+- [Engine embedding](./engine/embedding.md)
+- [World definitions](./engine/world-definitions.md)
+- [Engine automation API](./engine/automation-api.md)
+- [Browser runtime](./engine/browser-runtime.md)
 - [CLI overview](./cli/overview.md)
+- [CLI commands](./cli/commands.md)
+- [Live sessions](./cli/live-sessions.md)
+- [Screenshots](./cli/screenshots.md)
+- [CLI troubleshooting](./cli/troubleshooting.md)
 - [MCP overview](./mcp/overview.md)
+- [MCP stdio server](./mcp/stdio-server.md)
+- [MCP resources](./mcp/resources.md)
+- [MCP client setup](./mcp/client-setup.md)
 - [Agent workflows](./agents/overview.md)
+- [Agent workflow](./agents/workflow.md)
+- [Agent MCP setup](./agents/mcp-setup.md)
+- [Gizmo Agent Skills](./agents/skills.md)
+
+Generated references:
+
+- [Reference index](./reference/index.md)
+- [Automation commands](./reference/automation-commands.generated.md)
+- [Automation resources](./reference/automation-resources.generated.md)
+- [Agent prompt context](./agents/prompt-context.generated.md)
 
 Package entrypoints:
 
@@ -36,9 +57,9 @@ is the CLI/live/MCP automation flow:
 
 ```bash
 npm install -g @gizmo3d/cli
-gizmo init ./my-world
+mkdir my-world
 cd ./my-world
-gizmo dev --no-open
+gizmo start --no-open
 ```
 
 The engine package also exposes runtime, editor, serialization, and automation

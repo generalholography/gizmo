@@ -28,25 +28,17 @@ npm run build
 npm run cli --workspace=cli -- --help
 ```
 
-## Create a World
+## Create and Start a World
 
 ```bash
-gizmo init ./my-world
+mkdir my-world
 cd ./my-world
+gizmo start --no-open
 ```
 
-This creates `world.json` and saves it as the default world for the workspace in
-`.gizmo/session.json`.
-
-## Start a Live Session
-
-```bash
-gizmo dev --no-open
-```
-
-`dev` starts a local live session, writes the active target to
-`.gizmo/session.json`, creates a run directory under `.gizmo/runs/`, and prints
-browser and MCP connection details.
+In an empty folder, `start` creates `world.json`, writes the active target to
+`.gizmo/session.json`, starts a local live session, creates a run directory
+under `.gizmo/runs/`, and prints browser and MCP connection details.
 
 Open the printed browser URL in a browser, or use the printed MCP config with an
 MCP-compatible coding agent.

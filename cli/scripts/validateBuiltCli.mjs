@@ -242,10 +242,12 @@ async function main() {
     assert.ok(tarballFiles.includes('package/main.js'), 'Expected package tarball to include main.js.');
     assert.ok(tarballFiles.includes('package/liveClient.js'), 'Expected package tarball to include liveClient.js.');
     assert.ok(!tarballFiles.some((file) => file.includes('/.gizmo/')), 'Package tarball must not include .gizmo runtime state.');
+    assert.ok(!tarballFiles.some((file) => file.endsWith('.tgz')), 'Package tarball must not include nested tarballs.');
+    assert.ok(!tarballFiles.some((file) => file.includes('/node_modules/')), 'Package tarball must not include bundled node_modules.');
 
     liveProcess = spawn(
       process.execPath,
-      [builtCliPath, 'live', './world.json', '--port', '0'],
+      [builtCliPath, 'start', './world.json', '--no-open', '--port', '0'],
       {
         cwd: tmpLiveWorkspace,
         env: process.env,

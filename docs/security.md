@@ -9,7 +9,7 @@ world files.
 
 ## Safe Defaults
 
-- `gizmo dev` and `gizmo live` bind to `127.0.0.1` by default.
+- `gizmo start` and `gizmo serve` bind to `127.0.0.1` by default.
 - Live sessions use a per-session token.
 - API requests require the token in a header.
 - API query-string tokens are rejected.

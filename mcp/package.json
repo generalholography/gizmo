@@ -1,9 +1,30 @@
 {
   "name": "@gizmo3d/mcp",
   "version": "0.3.0",
+  "description": "MCP server for Gizmo world automation commands and resources.",
   "license": "MIT",
   "type": "module",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generalholography/gizmo.git",
+    "directory": "mcp"
+  },
+  "homepage": "https://github.com/generalholography/gizmo/tree/main/mcp#readme",
+  "bugs": {
+    "url": "https://github.com/generalholography/gizmo/issues"
+  },
+  "keywords": [
+    "gizmo",
+    "mcp",
+    "model-context-protocol",
+    "3d",
+    "automation",
+    "agents"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

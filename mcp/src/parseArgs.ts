@@ -9,7 +9,7 @@ export function parseStdioServerArgs(argv: string[]): EngineMcpServerOptions {
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    if (arg === '--world' || arg === '--world-file') {
+    if (arg === '--world') {
       worldFilePath = argv[index + 1] ?? '';
       index += 1;
       continue;
@@ -29,4 +29,3 @@ export function parseStdioServerArgs(argv: string[]): EngineMcpServerOptions {
     autoSave,
   };
 }
-

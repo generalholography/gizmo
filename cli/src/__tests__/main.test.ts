@@ -405,4 +405,14 @@ describe('CLI main', () => {
     expect(payload.removedRunDirs).toContain(path.join(tempDir, '.gizmo', 'runs', 'stale-run'));
     await expect(fs.stat(path.join(tempDir, '.gizmo', 'runs', 'stale-run'))).rejects.toMatchObject({ code: 'ENOENT' });
   });
+
+  it('rejects removed pre-alpha command aliases', async () => {
+    const devIo = createIo();
+    expect(await runCli(['dev'], devIo.io)).toBe(1);
+    expect(devIo.stderr[0]).toContain("Unknown command 'dev'.");
+
+    const liveIo = createIo();
+    expect(await runCli(['live'], liveIo.io)).toBe(1);
+    expect(liveIo.stderr[0]).toContain("Unknown command 'live'.");
+  });
 });

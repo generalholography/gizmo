@@ -68,10 +68,10 @@ function usage(): string {
     'Commands:',
     '  init       Create a gizmo world in a directory and save it for that workspace',
     '  use        Save a default world file for this workspace',
-    '  dev        Start the live session, optionally open the browser, and print agent setup info',
+    '  start      Create or use a world, start a live session, and print agent setup info',
     '  mcp        Start the stdio MCP server for a world file',
     '  mcp-config Print the MCP config snippet for a world file or live server',
-    '  live       Start a browser-backed live session server',
+    '  serve      Start a browser-backed live session server for an existing world',
     '  call       Execute one engine command against a world file or live server',
     '  batch      Execute a batch of engine commands',
     '  resource   Read one engine resource',
@@ -91,18 +91,18 @@ function usage(): string {
     '  gizmo init',
     '  gizmo init ./my-world',
     '  gizmo use ./engine/src/worlds/live-cli-demo.json',
-    '  gizmo dev',
+    '  gizmo start',
     '  gizmo resource world-state-summary',
     '  gizmo call add-entity --params \'{"archetypeOrDef":"cube"}\'',
     '  gizmo camera get',
     '  gizmo camera set --position \'{"x":0,"y":8,"z":18}\' --look-at \'{"x":0,"y":4,"z":0}\'',
     '  gizmo camera frame-entity 12',
-    '  gizmo live',
+    '  gizmo serve',
     '  gizmo call add-entity --dry-run --params \'{"archetypeOrDef":"cube"}\'',
     '',
     'Saved defaults:',
     '  gizmo use /absolute/path/to/world.json',
-    '  ENGINE_WORLD=/absolute/path/to/world.json',
+    '  GIZMO_WORLD=/absolute/path/to/world.json',
     '',
     'JSON flags accept inline JSON or @path/to/file.json',
     'Live sessions bind to loopback by default. Use --allow-remote only for trusted networks.',
@@ -134,7 +134,7 @@ async function handleInit(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime)
     mcpConfig: buildMcpConfig({ worldFilePath: initialized.worldFilePath }),
     nextSteps: [
       `cd ${workspaceDir}`,
-      'Run gizmo dev --no-open to start a browser-backed live session for Codex or another agent.',
+      'Run gizmo start --no-open to start a browser-backed live session for Codex or another agent.',
       'Run gizmo mcp to attach a headless MCP session to this world.',
     ],
   });
@@ -195,9 +195,7 @@ async function maybeWriteScreenshotOutput(
 
 function getResourceParams(parsed: ParsedCliArgs): Record<string, any> {
   const params: Record<string, any> = {};
-  const eid = parseOptionalNumber(getStringFlag(parsed, 'eid'), 'eid');
   const stableId = parseOptionalNumber(getStringFlag(parsed, 'stable-id'), 'stable-id');
-  if (eid !== undefined) params.eid = eid;
   if (stableId !== undefined) params.stableId = stableId;
   return params;
 }
@@ -218,6 +216,26 @@ async function openAutomationSession(
     worldFilePath: target.worldFilePath,
     autoSave,
   });
+}
+
+async function resolveStartWorldFilePath(
+  explicitTargetPath: string | undefined,
+  cwd: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<{ worldFilePath: string; initialized: Awaited<ReturnType<typeof initializeWorldFile>> | null }> {
+  if (explicitTargetPath?.trim()) {
+    const worldFilePath = resolveInitWorldFilePath(explicitTargetPath, cwd);
+    const initialized = await initializeWorldFile(worldFilePath, { ifMissing: true });
+    return { worldFilePath: initialized.worldFilePath, initialized };
+  }
+
+  try {
+    const worldFilePath = await resolveDefaultWorldFilePath(undefined, cwd, env);
+    return { worldFilePath, initialized: null };
+  } catch {
+    const initialized = await initializeWorldFile(resolveInitWorldFilePath(undefined, cwd), { ifMissing: true });
+    return { worldFilePath: initialized.worldFilePath, initialized };
+  }
 }
 
 async function handleCall(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
@@ -325,7 +343,7 @@ async function handleResource(
     const defaultPrefix =
       !outputPath && (resourceName === 'render-screenshot' || resourceName === 'entity-render-screenshot')
         ? resourceName === 'entity-render-screenshot'
-          ? `entity-screenshot-${resourceParams.stableId ?? resourceParams.eid ?? 'capture'}`
+          ? `entity-screenshot-${resourceParams.stableId ?? 'capture'}`
           : 'snapshot'
         : undefined;
     if (outputPath || defaultPrefix) {
@@ -402,17 +420,15 @@ async function handleCamera(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntim
         getPositionalOrFlag(parsed, 1, 'stable-id') ?? getStringFlag(parsed, 'stableId'),
         'stable-id',
       );
-      const eid = parseOptionalNumber(getStringFlag(parsed, 'eid'), 'eid');
       const padding = parseOptionalNumber(getStringFlag(parsed, 'padding'), 'padding');
       const fov = parseOptionalNumber(getStringFlag(parsed, 'fov'), 'fov');
-      if (stableId === undefined && eid === undefined) {
-        throw new Error('camera frame-entity requires a StableID positional argument, --stable-id, or --eid.');
+      if (stableId === undefined) {
+        throw new Error('camera frame-entity requires a stable ID positional argument or --stable-id.');
       }
       printJson(
         io,
         await runCommand('frame-viewport-entity', {
           ...(stableId !== undefined ? { stableId } : {}),
-          ...(eid !== undefined ? { eid } : {}),
           ...(padding !== undefined ? { padding } : {}),
           ...(fov !== undefined ? { fov } : {}),
         }),
@@ -424,14 +440,25 @@ async function handleCamera(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntim
   }
 }
 
-async function handleLive(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
+async function startBrowserBackedSession(options: {
+  parsed: ParsedCliArgs;
+  io: CliIo;
+  runtime: CliRuntime;
+  mode: 'start' | 'serve';
+  autoInit: boolean;
+  shouldOpen: boolean;
+}): Promise<void> {
   const { startLiveSessionServer } = await import('./liveServer');
+  const { parsed, io, runtime } = options;
   const cwd = runtime.cwd ?? process.cwd();
-  const worldFilePath = await resolveDefaultWorldFilePath(
-    getPositionalOrFlag(parsed, 0, 'world'),
-    cwd,
-    runtime.env,
-  );
+  const explicitWorld = getPositionalOrFlag(parsed, 0, 'world');
+  const resolved = options.autoInit
+    ? await resolveStartWorldFilePath(explicitWorld, cwd, runtime.env)
+    : {
+        worldFilePath: await resolveDefaultWorldFilePath(explicitWorld, cwd, runtime.env),
+        initialized: null,
+      };
+  const worldFilePath = resolved.worldFilePath;
   const host = getStringFlag(parsed, 'host') ?? '127.0.0.1';
   const port = parseOptionalNumber(getStringFlag(parsed, 'port'), 'port') ?? 4173;
   const allowRemote = getBooleanFlag(parsed, 'allow-remote');
@@ -444,6 +471,10 @@ async function handleLive(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime)
   });
 
   const info = server.getInfo();
+  const sessionCwd = options.autoInit && resolved.initialized ? path.dirname(worldFilePath) : cwd;
+  if (options.autoInit && resolved.initialized) {
+    await writeCliWorldSessionConfig(worldFilePath, sessionCwd);
+  }
   await writeCliLiveSessionConfig(
     {
       worldFilePath,
@@ -451,7 +482,7 @@ async function handleLive(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime)
       token: info.token,
       browserUrl: info.browserUrl,
     },
-    cwd,
+    sessionCwd,
   );
   const run = await ensureCliRun({
     cwd,
@@ -465,11 +496,28 @@ async function handleLive(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime)
     forceNew: true,
   });
 
-  printJson(io, buildLiveSessionOutput({
-    mode: 'live',
+  let browserOpen: { command: string; args: string[] } | null = null;
+
+  if (options.shouldOpen && info.browserUrl) {
+    browserOpen = await openUrl(info.browserUrl);
+  }
+
+  const output = buildLiveSessionOutput({
+    mode: options.mode,
     liveInfo: info,
     run,
-  }));
+    browserOpen,
+  });
+  printJson(io, {
+    ...output,
+    ...(resolved.initialized ? {
+      initializedWorld: {
+        worldFilePath: resolved.initialized.worldFilePath,
+        created: resolved.initialized.created,
+        overwrote: resolved.initialized.overwrote,
+      },
+    } : {}),
+  });
 
   const shutdown = async () => {
     await server.close();
@@ -480,68 +528,26 @@ async function handleLive(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime)
   process.on('SIGTERM', shutdown);
 }
 
-async function handleDev(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
-  const { startLiveSessionServer } = await import('./liveServer');
-  const cwd = runtime.cwd ?? process.cwd();
-  const worldFilePath = await resolveDefaultWorldFilePath(
-    getPositionalOrFlag(parsed, 0, 'world'),
-    cwd,
-    runtime.env,
-  );
-  const host = getStringFlag(parsed, 'host') ?? '127.0.0.1';
-  const port = parseOptionalNumber(getStringFlag(parsed, 'port'), 'port') ?? 4173;
-  const shouldOpen = !getBooleanFlag(parsed, 'no-open');
-  const allowRemote = getBooleanFlag(parsed, 'allow-remote');
-
-  const server = await startLiveSessionServer({
-    worldFilePath,
-    host,
-    port,
-    allowRemote,
+async function handleServe(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
+  await startBrowserBackedSession({
+    parsed,
+    io,
+    runtime,
+    mode: 'serve',
+    autoInit: false,
+    shouldOpen: false,
   });
+}
 
-  const liveInfo = server.getInfo();
-  await writeCliLiveSessionConfig(
-    {
-      worldFilePath,
-      serverUrl: liveInfo.serverUrl,
-      token: liveInfo.token,
-      browserUrl: liveInfo.browserUrl,
-    },
-    cwd,
-  );
-  const run = await ensureCliRun({
-    cwd,
-    target: {
-      mode: 'live',
-      serverUrl: liveInfo.serverUrl,
-      token: liveInfo.token,
-      browserUrl: liveInfo.browserUrl,
-      worldFilePath,
-    },
-    forceNew: true,
+async function handleStart(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
+  await startBrowserBackedSession({
+    parsed,
+    io,
+    runtime,
+    mode: 'start',
+    autoInit: true,
+    shouldOpen: !getBooleanFlag(parsed, 'no-open'),
   });
-
-  let browserOpen: { command: string; args: string[] } | null = null;
-
-  if (shouldOpen && liveInfo.browserUrl) {
-    browserOpen = await openUrl(liveInfo.browserUrl);
-  }
-
-  printJson(io, buildLiveSessionOutput({
-    mode: 'dev',
-    liveInfo: liveInfo,
-    run,
-    browserOpen,
-  }));
-
-  const shutdown = async () => {
-    await server.close();
-    process.exit(0);
-  };
-
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
 }
 
 async function handleUse(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
@@ -618,8 +624,8 @@ export async function runCli(argv: string[], io = defaultIo(), runtime: CliRunti
       case 'init':
         await handleInit(parsed, io, runtime);
         return 0;
-      case 'dev':
-        await handleDev(parsed, io, runtime);
+      case 'start':
+        await handleStart(parsed, io, runtime);
         return 0;
       case 'mcp': {
         const cwd = runtime.cwd ?? process.cwd();
@@ -670,8 +676,8 @@ export async function runCli(argv: string[], io = defaultIo(), runtime: CliRunti
       case 'resources':
         printJson(io, listAutomationResourceDefinitions());
         return 0;
-      case 'live':
-        await handleLive(parsed, io, runtime);
+      case 'serve':
+        await handleServe(parsed, io, runtime);
         return 0;
       case 'session': {
         const cwd = runtime.cwd ?? process.cwd();

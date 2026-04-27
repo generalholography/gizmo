@@ -571,9 +571,7 @@ export async function startLiveSessionServer(options: LiveSessionServerOptions):
         }
 
         const params: Record<string, any> = {};
-        const eid = url.searchParams.get('eid');
         const stableId = url.searchParams.get('stableId');
-        if (eid !== null) params.eid = Number(eid);
         if (stableId !== null) params.stableId = Number(stableId);
 
         writeJson(res, 200, await controller.handleResource(name, params));

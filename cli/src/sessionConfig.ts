@@ -132,8 +132,8 @@ export async function resolveConfiguredWorldFilePath(
     return config.worldFilePath;
   }
 
-  if (env.ENGINE_WORLD?.trim()) {
-    return path.resolve(cwd, env.ENGINE_WORLD);
+  if (env.GIZMO_WORLD?.trim()) {
+    return path.resolve(cwd, env.GIZMO_WORLD);
   }
 
   return null;
@@ -154,7 +154,7 @@ export async function resolveDefaultWorldFilePath(
   }
 
   throw new Error(
-    'No world is selected. Pass --world <path>, set ENGINE_WORLD, or run `gizmo use <path>`.',
+    'No world is selected. Pass --world <path>, set GIZMO_WORLD, or run `gizmo use <path>`.',
   );
 }
 
@@ -193,10 +193,10 @@ export async function resolveCliTarget(
     };
   }
 
-  if (env.ENGINE_WORLD?.trim()) {
+  if (env.GIZMO_WORLD?.trim()) {
     return {
       mode: 'world',
-      worldFilePath: path.resolve(cwd, env.ENGINE_WORLD),
+      worldFilePath: path.resolve(cwd, env.GIZMO_WORLD),
     };
   }
 
@@ -208,6 +208,6 @@ export async function resolveCliTarget(
   }
 
   throw new Error(
-    'No active gizmo target. Run `gizmo dev <path>` for a live session or `gizmo use <path>` for a world file.',
+    'No active gizmo target. Run `gizmo start <path>` for a live session or `gizmo use <path>` for a world file.',
   );
 }

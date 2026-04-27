@@ -7,7 +7,7 @@ interface LiveBrowserOpenResult {
 }
 
 interface BuildLiveSessionOutputOptions {
-  mode: 'live' | 'dev';
+  mode: 'serve' | 'start';
   liveInfo: Record<string, any>;
   run: CliRunConfig;
   browserOpen?: LiveBrowserOpenResult | null;
@@ -29,9 +29,9 @@ export function buildLiveSessionOutput(options: BuildLiveSessionOutputOptions): 
   const mcpConfig = buildMcpConfig();
   const portableMcpConfig = buildMcpConfig(serverUrl ? { serverUrl, token } : {});
   const payload =
-    options.mode === 'dev'
+    options.mode === 'start'
       ? {
-          mode: 'dev',
+          mode: 'start',
           live: options.liveInfo,
         }
       : options.liveInfo;
@@ -39,7 +39,7 @@ export function buildLiveSessionOutput(options: BuildLiveSessionOutputOptions): 
   return {
     ...payload,
     run: options.run,
-    ...(options.mode === 'dev'
+    ...(options.mode === 'start'
       ? {
           browserOpened: !!options.browserOpen,
           browserOpen: options.browserOpen ?? null,

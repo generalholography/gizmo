@@ -9,7 +9,7 @@ targeting, and capture screenshots when visual validation matters.
 ```bash
 gizmo init ./my-world
 cd ./my-world
-gizmo dev --no-open
+gizmo start --no-open
 ```
 
 Then attach an MCP-compatible agent using the printed `mcpConfig`, and open the
@@ -46,3 +46,10 @@ gizmo snapshot
 Repo-local skills should be thin task guides that reference generated command
 and resource catalogs rather than duplicating those catalogs by hand. The engine
 automation definitions are the source of truth for command and resource shapes.
+
+## More Agent Docs
+
+- [Agent workflow](./workflow.md)
+- [MCP setup](./mcp-setup.md)
+- [Gizmo Agent Skills](./skills.md)
+- [Generated prompt context](./prompt-context.generated.md)

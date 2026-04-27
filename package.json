@@ -1,9 +1,29 @@
 {
   "name": "gizmo",
   "version": "0.3.0",
+  "description": "Open-source toolkit for browser 3D worlds, local automation, and MCP-compatible agent workflows.",
   "license": "MIT",
   "private": true,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generalholography/gizmo.git"
+  },
+  "homepage": "https://github.com/generalholography/gizmo#readme",
+  "bugs": {
+    "url": "https://github.com/generalholography/gizmo/issues"
+  },
+  "keywords": [
+    "3d",
+    "threejs",
+    "game-engine",
+    "mcp",
+    "automation",
+    "agents"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "workspaces": [
     "engine",
     "mcp",
@@ -12,11 +32,15 @@
   "scripts": {
     "build": "npm run build --workspace=engine && npm run build --workspace=mcp && npm run build --workspace=cli",
     "test": "npm run test --workspace=engine && npm run test --workspace=mcp && npm run test --workspace=cli",
-    "validate": "npm run validate --workspace=cli",
+    "docs:generate": "node scripts/generate-docs.mjs",
+    "docs:check": "node scripts/generate-docs.mjs --check",
+    "skills:check": "node scripts/validate-skills.mjs",
+    "validate": "npm run docs:check && npm run skills:check && npm run validate --workspace=cli",
     "build:package": "npm run build:package --workspace=engine && npm run build --workspace=mcp && npm run build --workspace=cli",
     "pack:dry-run": "npm pack --dry-run --workspace=engine && npm pack --dry-run --workspace=mcp && npm run build --workspace=cli && npm pack --dry-run --workspace=cli"
   },
   "devDependencies": {
+    "@gizmo3d/cli": "^0.3.0",
     "vite": "^6.4.2"
   }
 }

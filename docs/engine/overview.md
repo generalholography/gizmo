@@ -73,3 +73,10 @@ that need to serve a specific runtime version for dynamic world compatibility.
 ## Package README
 
 See [`engine/README.md`](../../engine/README.md) for the package entrypoint.
+
+## More Engine Docs
+
+- [Embedding](./embedding.md)
+- [World definitions](./world-definitions.md)
+- [Automation API](./automation-api.md)
+- [Browser runtime](./browser-runtime.md)

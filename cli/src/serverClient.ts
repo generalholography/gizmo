@@ -75,9 +75,6 @@ export async function readLiveServerResource(
 ): Promise<any> {
   const url = new URL(`${trimTrailingSlash(serverUrl)}/api/resource`);
   url.searchParams.set('name', name);
-  if (params?.eid !== undefined) {
-    url.searchParams.set('eid', String(params.eid));
-  }
   if (params?.stableId !== undefined) {
     url.searchParams.set('stableId', String(params.stableId));
   }

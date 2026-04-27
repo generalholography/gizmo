@@ -64,21 +64,15 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
   },
   {
     name: 'delete-entity',
-    description: 'Delete an entity by its ID.',
+    description: 'Delete an entity by its stable ID.',
     changesState: true,
     persistsWorld: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to delete.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to delete.',
+        required: true,
+        description: 'Stable ID of the entity to delete.',
       },
     ],
   },
@@ -89,16 +83,10 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
     persistsWorld: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to duplicate.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to duplicate.',
+        required: true,
+        description: 'Stable ID of the entity to duplicate.',
       },
       {
         name: 'offset',
@@ -115,16 +103,10 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
     persistsWorld: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to transform.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to transform.',
+        required: true,
+        description: 'Stable ID of the entity to transform.',
       },
       {
         name: 'transform',
@@ -141,16 +123,10 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
     persistsWorld: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to modify.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to modify.',
+        required: true,
+        description: 'Stable ID of the entity to modify.',
       },
       {
         name: 'componentName',
@@ -173,16 +149,10 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
     persistsWorld: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to modify.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to modify.',
+        required: true,
+        description: 'Stable ID of the entity to modify.',
       },
       {
         name: 'componentName',
@@ -199,16 +169,10 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
     persistsWorld: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to modify.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to modify.',
+        required: true,
+        description: 'Stable ID of the entity to modify.',
       },
       {
         name: 'componentName',
@@ -231,16 +195,10 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
     persistsWorld: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to modify.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to modify.',
+        required: true,
+        description: 'Stable ID of the entity to modify.',
       },
       {
         name: 'body',
@@ -257,16 +215,10 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
     persistsWorld: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to modify.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to modify.',
+        required: true,
+        description: 'Stable ID of the entity to modify.',
       },
       {
         name: 'parentPath',
@@ -289,16 +241,10 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
     persistsWorld: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to modify.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to modify.',
+        required: true,
+        description: 'Stable ID of the entity to modify.',
       },
       {
         name: 'archetype',
@@ -321,16 +267,10 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
     persistsWorld: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to modify.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to modify.',
+        required: true,
+        description: 'Stable ID of the entity to modify.',
       },
       {
         name: 'path',
@@ -511,20 +451,14 @@ export const ENGINE_AUTOMATION_COMMAND_DEFINITIONS: AutomationCommandDefinition[
   },
   {
     name: 'frame-viewport-entity',
-    description: 'Move the viewport camera to frame one entity by StableID or entity ID.',
+    description: 'Move the viewport camera to frame one entity by stable ID.',
     changesState: true,
     parameters: [
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID to frame.',
-      },
-      {
         name: 'stableId',
         type: 'number',
-        required: false,
-        description: 'StableID of the entity to frame.',
+        required: true,
+        description: 'Stable ID of the entity to frame.',
       },
       {
         name: 'padding',
@@ -573,16 +507,10 @@ export const ENGINE_EDITOR_AGENT_COMMAND_DEFINITIONS: AutomationCommandDefinitio
         description: 'Resource name (e.g., "entity-list", "entity-bundle", "selected-entities-full").',
       },
       {
-        name: 'eid',
-        type: 'number',
-        required: false,
-        description: 'Entity ID for resources that require an entity (e.g., "entity-bundle").',
-      },
-      {
         name: 'stableId',
         type: 'number',
         required: false,
-        description: 'StableID for resources that require an entity (e.g., "entity-bundle").',
+        description: 'Stable ID for resources that require an entity (e.g., "entity-bundle").',
       },
     ],
   },

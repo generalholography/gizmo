@@ -1,6 +1,7 @@
 {
   "name": "@gizmo3d/engine",
   "version": "0.3.0",
+  "description": "Browser 3D runtime, editor APIs, world serialization, and automation layer for Gizmo.",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "exports": {
@@ -93,6 +94,26 @@
     "vitest": "^3.2.4"
   },
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generalholography/gizmo.git",
+    "directory": "engine"
+  },
+  "homepage": "https://github.com/generalholography/gizmo/tree/main/engine#readme",
+  "bugs": {
+    "url": "https://github.com/generalholography/gizmo/issues"
+  },
+  "keywords": [
+    "gizmo",
+    "3d",
+    "threejs",
+    "game-engine",
+    "world-editor",
+    "automation"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "publishConfig": {
     "access": "public"
   }

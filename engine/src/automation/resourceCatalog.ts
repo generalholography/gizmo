@@ -104,12 +104,12 @@ export const ENGINE_AUTOMATION_RESOURCE_DEFINITIONS: AutomationResourceDefinitio
   {
     kind: 'template',
     name: 'entity-bundle',
-    description: 'Get a full entity bundle by StableID.',
+    description: 'Get a full entity bundle by stable ID.',
     mimeType: 'application/json',
     parameters: [
       {
         name: 'stableId',
-        description: 'StableID of the entity to read.',
+        description: 'Stable ID of the entity to read.',
       },
     ],
     aliases: ['entity-bundle'],
@@ -131,12 +131,12 @@ export const ENGINE_AUTOMATION_RESOURCE_DEFINITIONS: AutomationResourceDefinitio
   {
     kind: 'template',
     name: 'entity-render-screenshot',
-    description: 'Capture a screenshot focused on a single entity by StableID.',
+    description: 'Capture a screenshot focused on a single entity by stable ID.',
     mimeType: 'application/json',
     parameters: [
       {
         name: 'stableId',
-        description: 'StableID of the entity to capture.',
+        description: 'Stable ID of the entity to capture.',
       },
     ],
     aliases: ['entity-render-screenshot'],

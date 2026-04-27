@@ -15,8 +15,8 @@ gizmo --help
 
 - `gizmo init`: create a world file and workspace session.
 - `gizmo use`: save a default world for the current workspace.
-- `gizmo dev`: start the recommended live workflow and print browser/MCP setup.
-- `gizmo live`: start a lower-level browser-backed live server.
+- `gizmo start`: start the recommended live workflow and print browser/MCP setup.
+- `gizmo serve`: start a lower-level browser-backed live server.
 - `gizmo mcp`: start a stdio MCP server.
 - `gizmo mcp-config`: print MCP configuration.
 - `gizmo call`: execute one automation command.
@@ -35,10 +35,10 @@ The CLI can operate against a headless world file or a live server. It resolves
 targets from:
 
 1. explicit `--world` or `--server`
-2. environment variables such as `ENGINE_WORLD`
+2. environment variables such as `GIZMO_WORLD`
 3. `.gizmo/session.json`
 
-`gizmo dev` writes the active live session to `.gizmo/session.json`, so
+`gizmo start` writes the active live session to `.gizmo/session.json`, so
 follow-up commands usually do not need repeated flags.
 
 ## JSON Flags
@@ -51,10 +51,17 @@ gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
 
 ## Screenshots and Runs
 
-`gizmo dev` creates an active run under `.gizmo/runs/<run-id>/`. Screenshot
+`gizmo start` creates an active run under `.gizmo/runs/<run-id>/`. Screenshot
 artifacts default to that run's `artifacts/` directory.
 
 ## Package README
 
 See [`cli/README.md`](../../cli/README.md) for the package entrypoint and command
 examples.
+
+## More CLI Docs
+
+- [Commands](./commands.md)
+- [Live sessions](./live-sessions.md)
+- [Screenshots](./screenshots.md)
+- [Troubleshooting](./troubleshooting.md)

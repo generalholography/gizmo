@@ -40,7 +40,7 @@ If the current workspace already has `.gizmo/session.json`, the args can be:
 ["mcp"]
 ```
 
-`gizmo dev` prints ready-to-use MCP configs for live sessions.
+`gizmo start` prints ready-to-use MCP configs for live sessions.
 
 ## Library Usage
 
@@ -76,6 +76,11 @@ Tools are generated from engine automation command definitions such as
 `add-entity`, `delete-entity`, `set-transform`, `modify-component`,
 `reinitialize-world`, and viewport camera commands.
 
+Generated references:
+
+- [Automation commands](../docs/reference/automation-commands.generated.md)
+- [Automation resources](../docs/reference/automation-resources.generated.md)
+
 ## Security
 
 The MCP server can read and mutate world files. JavaScript/MJS world files can
@@ -97,6 +102,8 @@ npm run test --workspace=mcp
 ## Documentation
 
 - [MCP overview](../docs/mcp/overview.md)
+- [MCP resources](../docs/mcp/resources.md)
+- [MCP client setup](../docs/mcp/client-setup.md)
 - [Agent workflows](../docs/agents/overview.md)
 - [CLI overview](../docs/cli/overview.md)
 - [Security](../SECURITY.md)

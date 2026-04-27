@@ -20,13 +20,14 @@ The repo is a public npm workspace for the packages published under the
 
 ```bash
 npm install -g @gizmo3d/cli
-gizmo init ./my-world
+mkdir my-world
 cd ./my-world
-gizmo dev --no-open
+gizmo start --no-open
 ```
 
-`gizmo dev` starts a local live session and prints browser and MCP connection
-details. Once it is running, follow-up commands reuse the active session:
+In an empty folder, `gizmo start` creates `world.json`, starts a local live
+session, and prints browser and MCP connection details. Once it is running,
+follow-up commands reuse the active session:
 
 ```bash
 gizmo resource world-state-summary
@@ -71,6 +72,8 @@ current world.
 - [CLI overview](./docs/cli/overview.md)
 - [MCP overview](./docs/mcp/overview.md)
 - [Agent workflows](./docs/agents/overview.md)
+- [Gizmo Agent Skills](./docs/agents/skills.md)
+- [Generated reference](./docs/reference/index.md)
 - [Security model](./SECURITY.md)
 - [Contributing](./CONTRIBUTING.md)
 
@@ -97,8 +100,9 @@ Use the CLI for world workspaces, live sessions, MCP setup, automation commands,
 resources, camera control, and screenshots.
 
 ```bash
-gizmo init ./my-world
-gizmo dev ./my-world/world.json --no-open
+mkdir my-world
+cd ./my-world
+gizmo start --no-open
 gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
 ```
 

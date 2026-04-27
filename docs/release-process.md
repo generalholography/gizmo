@@ -16,12 +16,15 @@ Before releasing:
 npm install
 npm run build
 npm test
+npm run docs:check
+npm run skills:check
 npm run validate
 npm run pack:dry-run
 ```
 
-`npm run validate` currently validates the CLI build and packaged behavior. The
-release workflow also runs package dry-runs before publishing.
+`npm run validate` checks generated docs, validates agent skills, and validates
+the CLI build/package behavior. The release workflow also runs package dry-runs
+before publishing.
 
 ## GitHub Workflow
 

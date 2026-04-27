@@ -18,8 +18,8 @@ An entity is a runtime object composed from components. Entities commonly have
 components such as `Info`, `Transform`, `Body`, `Health`, `Inventory`, or
 behavior-related rule data.
 
-Automation commands target entities by runtime entity ID (`eid`) or stable ID
-(`stableId`) when available. Stable IDs are better for repeatable automation.
+Automation commands target entities by stable ID (`stableId`). Stable IDs are
+durable across serialized world saves and repeatable automation sessions.
 
 ## Component
 

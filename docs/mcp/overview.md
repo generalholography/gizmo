@@ -33,7 +33,7 @@ gizmo mcp
 }
 ```
 
-`gizmo dev` prints workspace-local and portable MCP configs for live sessions.
+`gizmo start` prints workspace-local and portable MCP configs for live sessions.
 
 ## Resources
 
@@ -59,3 +59,9 @@ clients you trust to workspaces and world files you trust.
 ## Package README
 
 See [`mcp/README.md`](../../mcp/README.md) for package-level usage.
+
+## More MCP Docs
+
+- [Stdio server](./stdio-server.md)
+- [Resources](./resources.md)
+- [Client setup](./client-setup.md)

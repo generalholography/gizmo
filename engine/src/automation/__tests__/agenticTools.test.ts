@@ -8,7 +8,7 @@ import { Info } from '../../core/components';
 import { decode } from '../../utils/strings';
 import { getEntityBundle } from '../../core/despawn';
 import { getPartAtPath } from '../../core/editor/utils/bodyParts';
-import { stableIdToEid } from '../../utils/stableId';
+import { eidToStableId, stableIdToEid } from '../../utils/stableId';
 
 describe('Automation resources', () => {
   let ctx: ReturnType<typeof createECS>;
@@ -43,15 +43,16 @@ describe('Automation resources', () => {
     expect(summary.entityCount).toBe(2);
   });
 
-  it('should get entity-bundle resource with eid parameter', () => {
+  it('should get entity-bundle resource with stableId parameter', () => {
     const eid = spawn(ctx, { 
       Info: { name: 'TestEntity' },
       Transform: { x: 10, y: 5, z: 3 }
     });
 
-    const result = readAutomationResource(ctx, 'entity-bundle', { eid }) as any;
+    const stableId = eidToStableId(ctx, eid);
+    const result = readAutomationResource(ctx, 'entity-bundle', { stableId }) as any;
 
-    expect(result.eid).toBe(eid);
+    expect(result.stableId).toBe(stableId);
     expect(result.bundle.Info.name).toBe('TestEntity');
     expect(result.bundle.Transform.x).toBe(10);
   });
@@ -62,18 +63,17 @@ describe('Automation resources', () => {
       Transform: { x: 2, y: 4, z: 6 }
     });
 
-    const seed = readAutomationResource(ctx, 'entity-bundle', { eid }) as any;
-    const result = readAutomationResource(ctx, 'entity-bundle', { stableId: seed.stableId }) as any;
+    const stableId = eidToStableId(ctx, eid);
+    const result = readAutomationResource(ctx, 'entity-bundle', { stableId }) as any;
 
-    expect(result.eid).toBe(eid);
-    expect(result.stableId).toBe(seed.stableId);
+    expect(result.stableId).toBe(stableId);
     expect(result.bundle.Info.name).toBe('StableEntity');
   });
 
-  it('should throw error for entity-bundle without eid or stableId', () => {
+  it('should throw error for entity-bundle without stableId', () => {
     expect(() => {
       readAutomationResource(ctx, 'entity-bundle');
-    }).toThrow('entity-bundle resource requires eid or stableId parameter');
+    }).toThrow('entity-bundle resource requires stableId parameter');
   });
 
   it('should throw error for unknown resource', () => {
@@ -198,19 +198,20 @@ describe('Automation commands - terminate and read-resource', () => {
     expect(parsed.entityCount).toBe(1);
   });
 
-  it('should execute read-resource with eid parameter', async () => {
+  it('should execute read-resource with stableId parameter', async () => {
     const eid = spawn(ctx, { 
       Info: { name: 'MyEntity' },
       Transform: { x: 100, y: 50, z: 25 }
     });
+    const stableId = eidToStableId(ctx, eid);
 
     const result = await executeAutomationCommand(ctx, mockEngine, 'read-resource', {
       resourceName: 'entity-bundle',
-      eid
+      stableId
     });
 
     const parsed = JSON.parse(result);
-    expect(parsed.eid).toBe(eid);
+    expect(parsed.stableId).toBe(stableId);
     expect(parsed.bundle.Info.name).toBe('MyEntity');
     expect(parsed.bundle.Transform.x).toBe(100);
   });
@@ -221,16 +222,15 @@ describe('Automation commands - terminate and read-resource', () => {
       Transform: { x: 3, y: 6, z: 9 }
     });
 
-    const bundleResult = readAutomationResource(ctx, 'entity-bundle', { eid }) as any;
+    const stableId = eidToStableId(ctx, eid);
 
     const result = await executeAutomationCommand(ctx, mockEngine, 'read-resource', {
       resourceName: 'entity-bundle',
-      stableId: bundleResult.stableId
+      stableId
     });
 
     const parsed = JSON.parse(result);
-    expect(parsed.eid).toBe(eid);
-    expect(parsed.stableId).toBe(bundleResult.stableId);
+    expect(parsed.stableId).toBe(stableId);
     expect(parsed.bundle.Info.name).toBe('StableReadEntity');
   });
 
@@ -306,8 +306,10 @@ describe('Automation commands - undo/redo integration', () => {
       Info: { name: 'Before', description: 'Desc' },
     });
 
+    const stableId = eidToStableId(ctx, eid);
+
     await executeAutomationCommand(ctx, mockEngine, 'modify-component', {
-      eid,
+      stableId,
       componentName: 'Info',
       componentData: { name: 'After!' },
     });
@@ -347,11 +349,11 @@ describe('Automation commands - undo/redo integration', () => {
       },
       Info: { name: 'Body Entity' },
     });
-    const seed = readAutomationResource(ctx, 'entity-bundle', { eid }) as any;
+    const seed = readAutomationResource(ctx, 'entity-bundle', { stableId: eidToStableId(ctx, eid) }) as any;
 
     await expect(
       executeAutomationCommand(ctx, mockEngine, 'set-body-part-transform', {
-        eid,
+        stableId: seed.stableId,
         path: 'Body.params.parts.0.children.0',
         transform: {
           position: { x: 0.25, y: 1.5, z: -0.5 },

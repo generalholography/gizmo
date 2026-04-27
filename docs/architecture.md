@@ -36,7 +36,7 @@ The CLI provides the user-facing operational workflow:
 
 - `gizmo init` creates world files.
 - `gizmo use` saves workspace defaults.
-- `gizmo dev` starts the recommended live workflow and prints connection info.
+- `gizmo start` starts the recommended live workflow and prints connection info.
 - `gizmo call`, `batch`, and `resource` operate against a world file or live
   server.
 - `gizmo camera` and `snapshot` operate against live rendering resources.
@@ -45,7 +45,7 @@ The CLI provides the user-facing operational workflow:
 The CLI resolves targets in this order:
 
 1. explicit flags such as `--world` or `--server`
-2. environment variables such as `ENGINE_WORLD`
+2. environment variables such as `GIZMO_WORLD`
 3. workspace session config in `.gizmo/session.json`
 
 ## MCP Layer

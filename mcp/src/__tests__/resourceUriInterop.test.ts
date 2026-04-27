@@ -28,7 +28,7 @@ describe('MCP resource URI interoperability', () => {
       name: 'entity-bundle',
       description: 'entity',
       mimeType: 'application/json',
-      parameters: [{ name: 'stableId', description: 'StableID' }],
+      parameters: [{ name: 'stableId', description: 'Stable ID' }],
     } as const;
     expect(getMcpResourceUri(entityBundle)).toBe('engine://entities/{stableId}');
   });
@@ -42,7 +42,7 @@ describe('MCP resource URI interoperability', () => {
 
   it('parses entity screenshot URIs back to automation resource requests', () => {
     expect(resolveAutomationResourceRequestFromMcpUri('engine://render/entities/12/screenshot')).toEqual({
-      name: 'render-screenshot',
+      name: 'entity-render-screenshot',
       params: { stableId: 12 },
     });
   });

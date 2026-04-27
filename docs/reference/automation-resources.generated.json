@@ -1,0 +1,165 @@
+{
+  "generatedFrom": "engine/src/automation/resourceCatalog.ts",
+  "generatedBy": "scripts/generate-docs.mjs",
+  "resources": [
+    {
+      "kind": "static",
+      "name": "session-info",
+      "description": "Information about the active automation session and backing world file.",
+      "mimeType": "application/json",
+      "mcpUri": "engine://session/info"
+    },
+    {
+      "kind": "static",
+      "name": "world-state-summary",
+      "description": "High-level summary of world entities and metadata.",
+      "mimeType": "application/json",
+      "aliases": [
+        "world-state-summary"
+      ],
+      "mcpUri": "engine://world/summary"
+    },
+    {
+      "kind": "static",
+      "name": "component-catalog",
+      "description": "Registered component schemas with structural metadata.",
+      "mimeType": "application/json",
+      "aliases": [
+        "component-catalog"
+      ],
+      "mcpUri": "engine://components/catalog"
+    },
+    {
+      "kind": "static",
+      "name": "module-type-catalog",
+      "description": "Registered runtime module types, including persisted custom factories.",
+      "mimeType": "application/json",
+      "aliases": [
+        "module-type-catalog"
+      ],
+      "mcpUri": "engine://modules/types"
+    },
+    {
+      "kind": "static",
+      "name": "module-instance-catalog",
+      "description": "Named module instances across all modules.",
+      "mimeType": "application/json",
+      "aliases": [
+        "module-instance-catalog"
+      ],
+      "mcpUri": "engine://modules/instances"
+    },
+    {
+      "kind": "static",
+      "name": "entity-list",
+      "description": "List of all entities with basic info.",
+      "mimeType": "application/json",
+      "aliases": [
+        "entity-list"
+      ],
+      "mcpUri": "engine://entities"
+    },
+    {
+      "kind": "static",
+      "name": "selected-entities-full",
+      "description": "Selected entities with IDs and full definitions.",
+      "mimeType": "application/json",
+      "aliases": [
+        "selected-entities-full"
+      ],
+      "mcpUri": "engine://selection/entities"
+    },
+    {
+      "kind": "static",
+      "name": "selected-body-parts-full",
+      "description": "Selected body parts with IDs and full entity definitions.",
+      "mimeType": "application/json",
+      "aliases": [
+        "selected-body-parts-full"
+      ],
+      "mcpUri": "engine://selection/body-parts"
+    },
+    {
+      "kind": "static",
+      "name": "metadata",
+      "description": "World metadata (title, description, dimensions).",
+      "mimeType": "application/json",
+      "aliases": [
+        "metadata"
+      ],
+      "mcpUri": "engine://world/metadata"
+    },
+    {
+      "kind": "static",
+      "name": "achievements",
+      "description": "List of all achievements.",
+      "mimeType": "application/json",
+      "aliases": [
+        "achievements"
+      ],
+      "mcpUri": "engine://world/achievements"
+    },
+    {
+      "kind": "static",
+      "name": "full-world-state",
+      "description": "Complete serialized world state.",
+      "mimeType": "application/json",
+      "aliases": [
+        "full-world-state"
+      ],
+      "mcpUri": "engine://world/full-state"
+    },
+    {
+      "kind": "template",
+      "name": "entity-bundle",
+      "description": "Get a full entity bundle by stable ID.",
+      "mimeType": "application/json",
+      "parameters": [
+        {
+          "name": "stableId",
+          "description": "Stable ID of the entity to read."
+        }
+      ],
+      "aliases": [
+        "entity-bundle"
+      ],
+      "mcpUri": "engine://entities/{stableId}"
+    },
+    {
+      "kind": "static",
+      "name": "render-screenshot",
+      "description": "Capture a screenshot of the full world viewport.",
+      "mimeType": "application/json",
+      "aliases": [
+        "render-screenshot"
+      ],
+      "mcpUri": "engine://render/screenshot"
+    },
+    {
+      "kind": "static",
+      "name": "viewport-camera",
+      "description": "Current viewport camera pose and framing direction.",
+      "mimeType": "application/json",
+      "aliases": [
+        "viewport-camera"
+      ],
+      "mcpUri": "engine://viewport/camera"
+    },
+    {
+      "kind": "template",
+      "name": "entity-render-screenshot",
+      "description": "Capture a screenshot focused on a single entity by stable ID.",
+      "mimeType": "application/json",
+      "parameters": [
+        {
+          "name": "stableId",
+          "description": "Stable ID of the entity to capture."
+        }
+      ],
+      "aliases": [
+        "entity-render-screenshot"
+      ],
+      "mcpUri": "engine://render/entities/{stableId}/screenshot"
+    }
+  ]
+}

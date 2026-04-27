@@ -69,7 +69,7 @@ export function resolveAutomationResourceRequestFromMcpUri(uri: string): {
         throw new Error(`Invalid stableId in resource URI '${uri}'`);
       }
       return {
-        name: 'render-screenshot',
+        name: 'entity-render-screenshot',
         params: { stableId },
       };
     }

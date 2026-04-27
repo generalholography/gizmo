@@ -95,7 +95,7 @@ export function resolveInitWorldFilePath(targetPath: string | undefined, cwd = p
 
 export async function initializeWorldFile(
   worldFilePath: string,
-  options: { force?: boolean } = {},
+  options: { force?: boolean; ifMissing?: boolean } = {},
 ): Promise<InitializedWorldFile> {
   const resolvedPath = path.resolve(worldFilePath);
   const format = detectWorldFileFormatFromPath(resolvedPath);
@@ -108,6 +108,15 @@ export async function initializeWorldFile(
     if (error?.code !== 'ENOENT') {
       throw new Error(`Failed to access world file '${resolvedPath}': ${error?.message || error}`);
     }
+  }
+
+  if (existedOnDisk && options.ifMissing) {
+    return {
+      worldFilePath: resolvedPath,
+      format,
+      created: false,
+      overwrote: false,
+    };
   }
 
   if (existedOnDisk && !options.force) {

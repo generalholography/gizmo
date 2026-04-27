@@ -54,6 +54,19 @@ Public docs live in `docs/` and package entrypoints live in each package
 Avoid private deployment notes, historical design logs, or migration-only terms
 in primary user docs. If a historical note is necessary, label it clearly.
 
+Generated references are updated with:
+
+```bash
+npm run docs:generate
+npm run docs:check
+npm run skills:check
+```
+
+Run these after changing automation command or resource definitions.
+
+Agent skills live in `.agents/skills/`. Keep that directory as the canonical
+source and do not maintain duplicate agent-specific copies by hand.
+
 ## Adding Automation Commands or Resources
 
 Automation commands are defined in `engine/src/automation/definitions.ts` and

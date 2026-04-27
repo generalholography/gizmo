@@ -12,7 +12,7 @@ gizmo --help
 ```
 
 The CLI installs the `gizmo` executable and includes the live-session browser
-bundle needed by `gizmo dev` and `gizmo live`.
+bundle needed by `gizmo start` and `gizmo serve`.
 
 ## Engine
 
