@@ -27,7 +27,7 @@ const distPackage = {
     'public',
   ],
   keywords: ['game-engine', 'cli', 'mcp', 'editor', 'ai'],
-  license: 'MIT',
+  license: 'Apache-2.0',
   repository: {
     type: 'git',
     url: 'https://github.com/generalholography/gizmo.git',

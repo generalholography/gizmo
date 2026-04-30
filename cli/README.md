@@ -252,4 +252,4 @@ Remove or replace the older install, then reinstall `@gizmo3d/cli`.
 
 ## License
 
-MIT
+Apache-2.0

@@ -1,7 +1,7 @@
 ---
 name: gizmo-module-author
 description: Create, inspect, update, and remove Gizmo runtime module types and module instances using automation commands and catalogs. Use when authoring custom fields, materials, meshes, colliders, or persisted runtime factory source.
-license: MIT
+license: Apache-2.0
 compatibility: Requires the gizmo CLI and trusted JavaScript factory source.
 ---
 

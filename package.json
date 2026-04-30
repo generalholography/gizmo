@@ -2,7 +2,7 @@
   "name": "gizmo",
   "version": "0.3.0",
   "description": "Open-source toolkit for browser 3D worlds, local automation, and MCP-compatible agent workflows.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "private": true,
   "type": "module",
   "repository": {

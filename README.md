@@ -197,4 +197,4 @@ validation output with changes that affect runtime, CLI, MCP, or docs behavior.
 
 ## License
 
-Gizmo is licensed under the [MIT License](./LICENSE).
+Gizmo is licensed under the [Apache License 2.0](./LICENSE).

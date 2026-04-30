@@ -1,7 +1,7 @@
 ---
 name: gizmo-world-builder
 description: Create, inspect, modify, and validate Gizmo worlds using the gizmo CLI, live sessions, MCP resources, automation commands, camera control, and screenshots. Use when working on Gizmo world files or agent-assisted scene editing.
-license: MIT
+license: Apache-2.0
 compatibility: Requires the gizmo CLI and a trusted local workspace.
 ---
 

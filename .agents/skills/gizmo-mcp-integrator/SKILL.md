@@ -1,7 +1,7 @@
 ---
 name: gizmo-mcp-integrator
 description: Configure MCP-compatible coding agents such as Codex, Claude Code, and others to use Gizmo through gizmo mcp or gizmo start. Use when setting up MCP config, live-session proxying, or agent access to Gizmo automation tools/resources.
-license: MIT
+license: Apache-2.0
 compatibility: Requires the gizmo CLI and an MCP-compatible agent.
 ---
 

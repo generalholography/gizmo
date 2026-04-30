@@ -1,7 +1,7 @@
 ---
 name: gizmo-live-session
 description: Debug and operate Gizmo browser-backed live sessions, including gizmo start/serve, session files, local server auth, camera control, screenshots, and run artifacts. Use when live rendering, viewport screenshots, or session connectivity is involved.
-license: MIT
+license: Apache-2.0
 compatibility: Requires the gizmo CLI, local loopback networking, and a trusted workspace.
 ---
 

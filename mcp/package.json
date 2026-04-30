@@ -2,7 +2,7 @@
   "name": "@gizmo3d/mcp",
   "version": "0.3.0",
   "description": "MCP server for Gizmo world automation commands and resources.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "private": false,
   "repository": {

@@ -124,4 +124,4 @@ npm run build:package --workspace=engine
 
 ## License
 
-MIT
+Apache-2.0

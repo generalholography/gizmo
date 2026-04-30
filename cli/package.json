@@ -2,7 +2,7 @@
   "name": "@gizmo3d/cli",
   "version": "0.3.0",
   "description": "The gizmo CLI for local 3D world workspaces, live sessions, automation, screenshots, and MCP setup.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "private": false,
   "repository": {
