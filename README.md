@@ -5,6 +5,15 @@ Gizmo is an open-source toolkit for building, editing, and automating browser
 automation layer, a command-line tool, and an MCP server that lets coding agents
 inspect and modify worlds through structured commands.
 
+<p align="center">
+  <a href="./docs/assets/world-building-demo.mp4">
+    <img src="./docs/assets/world-building-demo.gif" alt="Gizmo agent-assisted world-building demo" width="720">
+  </a>
+</p>
+
+Gizmo lets coding agents inspect, edit, and visually validate browser 3D worlds
+through the CLI and MCP.
+
 The repo is a public npm workspace for the packages published under the
 `@gizmo3d` scope:
 
