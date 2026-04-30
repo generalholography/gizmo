@@ -54,6 +54,16 @@ Gizmo is intended for:
   repeatable commands.
 - Tools that embed a 3D runtime, editor surface, or world serialization layer.
 
+## Why Gizmo?
+
+- Local-first workflow: create a world in an empty folder with one command.
+- Agent-friendly surface: coding agents can inspect state, make structured
+  changes, move the camera, and capture screenshots through CLI or MCP.
+- Shared automation model: the CLI, MCP server, live browser session, and engine
+  automation APIs use the same command/resource definitions.
+- Browser runtime included: embed the engine directly or use the CLI to serve a
+  live editor session while iterating.
+
 Worlds are serializable scene/simulation definitions. Entities are composed from
 components. Behavior is modeled with rules, triggers, conditions, actions, and
 stores. Automation commands mutate worlds through the same editor command path
@@ -155,9 +165,11 @@ version into their own public asset tree as part of their build or deployment
 process.
 
 Publishing is handled by the release workflow in
-[.github/workflows/release.yml](./.github/workflows/release.yml). The workflow
-builds, tests, validates the CLI package, dry-runs package contents, publishes
-the three public workspaces, and uploads the engine browser runtime artifact.
+[.github/workflows/release.yml](./.github/workflows/release.yml). After npm
+publishing access is configured, the workflow builds, tests, validates the CLI
+package, dry-runs package contents, publishes the three public workspaces,
+uploads the engine browser runtime artifact, and creates a GitHub Release for
+version tags.
 
 ## Security
 

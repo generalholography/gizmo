@@ -44,4 +44,26 @@ describe('CLI arg parser', () => {
     expect(call.positionals).toEqual(['add-entity']);
     expect(getStringFlag(call, 'params')).toBe('{"x":1}');
   });
+
+  it('supports global flags before commands and short flags', () => {
+    const version = parseCliArgs(['--version']);
+    const help = parseCliArgs(['-h', 'start']);
+    const verboseHelp = parseCliArgs(['start', '-hv']);
+
+    expect(version.command).toBe(null);
+    expect(getBooleanFlag(version, 'version')).toBe(true);
+    expect(help.command).toBe('start');
+    expect(getBooleanFlag(help, 'h')).toBe(true);
+    expect(verboseHelp.command).toBe('start');
+    expect(getBooleanFlag(verboseHelp, 'h')).toBe(true);
+    expect(getBooleanFlag(verboseHelp, 'v')).toBe(true);
+  });
+
+  it('treats tokens after -- as positionals', () => {
+    const parsed = parseCliArgs(['call', '--', '--not-a-flag']);
+
+    expect(parsed.command).toBe('call');
+    expect(parsed.positionals).toEqual(['--not-a-flag']);
+    expect(getStringFlag(parsed, 'not-a-flag')).toBeUndefined();
+  });
 });

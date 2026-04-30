@@ -69,7 +69,8 @@ export function getSpawnToolArchetype(tool: SpawnTool): string | null {
 }
 
 export function BottomBar() {
-  const { tool, setTool, spawnTool, setSpawnTool, clearSpawnTool, requestComposer, composerOpen, sessionConfig } = useEditor();
+  const { tool, setTool, spawnTool, setSpawnTool, clearSpawnTool, requestComposer, composerOpen, taskStore, sessionConfig } = useEditor();
+  const showComposerButton = Boolean(requestComposer && taskStore);
 
   const containerStyle: React.CSSProperties = {
     position: 'absolute',
@@ -155,7 +156,7 @@ export function BottomBar() {
         </>
       ) : null}
 
-      {requestComposer && (
+      {showComposerButton && (
         <button
           type="button"
           onClick={() => requestComposer?.()}

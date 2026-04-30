@@ -13,6 +13,7 @@ README or release notes.
 - Public documentation pass for the open-source repository.
 - Root-level OSS project files for contribution, support, security, and release
   orientation.
+- GitHub issue and pull request templates for public project intake.
 
 ### Changed
 
@@ -21,6 +22,8 @@ README or release notes.
 - Public terminology is standardized around worlds, entities, components,
   rules, triggers, conditions, actions, stores, automation commands, and
   automation resources.
+- Release workflow now publishes scoped packages with explicit public access and
+  creates a GitHub Release for version tags.
 
 ## 0.3.0
 

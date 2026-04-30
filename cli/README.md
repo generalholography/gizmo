@@ -10,6 +10,7 @@ controlling the viewport camera, and capturing screenshots.
 ```bash
 npm install -g @gizmo3d/cli
 gizmo --help
+gizmo --version
 ```
 
 For local repo development, build the workspace and run the CLI package script:
@@ -59,6 +60,17 @@ gizmo commands   List automation commands
 gizmo resources  List automation resources
 gizmo session    Read live-session summary
 gizmo clean      Remove stale run artifacts
+gizmo version    Print the installed CLI version
+```
+
+Help and version flags follow common CLI conventions:
+
+```bash
+gizmo --help
+gizmo start --help
+gizmo help snapshot
+gizmo --version
+gizmo -v
 ```
 
 ## Create or Select a World

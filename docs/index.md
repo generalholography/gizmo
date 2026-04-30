@@ -49,11 +49,9 @@ Package entrypoints:
 - [`@gizmo3d/cli`](../cli/README.md)
 - [`@gizmo3d/mcp`](../mcp/README.md)
 
-## Current Stability Notes
+## Public Alpha Stability
 
-The packages are structured for public publishing and local production use, but
-the documentation surface is still being expanded. The stable public path today
-is the CLI/live/MCP automation flow:
+The stable public path is the CLI/live/MCP automation flow:
 
 ```bash
 npm install -g @gizmo3d/cli
@@ -62,6 +60,7 @@ cd ./my-world
 gizmo start --no-open
 ```
 
-The engine package also exposes runtime, editor, serialization, and automation
-APIs for direct integration. When using lower-level engine APIs, prefer exported
-entrypoints from `@gizmo3d/engine` and `@gizmo3d/engine/automation/*`.
+The engine package exposes runtime, editor, serialization, and automation APIs
+for direct integration. During the public alpha, prefer exported entrypoints
+from `@gizmo3d/engine` and `@gizmo3d/engine/automation/*` and expect lower-level
+engine internals to keep moving faster than the CLI/MCP workflow.

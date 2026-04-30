@@ -27,6 +27,32 @@ describe('CLI main', () => {
     };
   }
 
+  it('prints version through conventional version flags and command', async () => {
+    for (const argv of [['--version'], ['-v'], ['version']]) {
+      const { io, stdout, stderr } = createIo();
+
+      expect(await runCli(argv, io)).toBe(0);
+      expect(stderr).toEqual([]);
+      expect(stdout[0]).toMatch(/^\d+\.\d+\.\d+/);
+    }
+  });
+
+  it('prints global and command-specific help through conventional help flags', async () => {
+    const globalHelp = createIo();
+    expect(await runCli(['--help'], globalHelp.io)).toBe(0);
+    expect(globalHelp.stdout[0]).toContain('Usage: gizmo <command>');
+    expect(globalHelp.stdout[0]).toContain('-v, --version');
+
+    const commandHelp = createIo();
+    expect(await runCli(['start', '--help'], commandHelp.io)).toBe(0);
+    expect(commandHelp.stdout[0]).toContain('Usage: gizmo start');
+    expect(commandHelp.stdout[0]).toContain('--no-open');
+
+    const helpCommand = createIo();
+    expect(await runCli(['help', 'snapshot'], helpCommand.io)).toBe(0);
+    expect(helpCommand.stdout[0]).toContain('Usage: gizmo snapshot');
+  });
+
   it('executes a headless command and persists changes', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-main-'));
     const worldFilePath = path.join(tempDir, 'world.json');

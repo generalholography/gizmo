@@ -21,7 +21,7 @@ Treat Gizmo workspaces like source code repositories:
 - Automation commands can mutate and auto-save world files.
 - Live sessions can expose rendered screenshots and serialized world state.
 
-Do not run `gizmo`, `gizmo mcp`, `gizmo live`, `gizmo dev`, or any embedded MCP
+Do not run `gizmo`, `gizmo mcp`, `gizmo start`, `gizmo serve`, or any embedded MCP
 server against untrusted repositories, world files, or generated JavaScript.
 
 ## CLI and Headless MCP
@@ -40,7 +40,7 @@ Security guidance:
 
 ## Live Sessions
 
-`gizmo dev` and `gizmo live` bind to `127.0.0.1` by default and create a
+`gizmo start` and `gizmo serve` bind to `127.0.0.1` by default and create a
 per-session token. The token appears in printed browser URLs and portable MCP
 configuration snippets. Treat those values as local secrets for the lifetime of
 the session.

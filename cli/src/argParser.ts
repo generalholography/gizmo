@@ -9,14 +9,36 @@ export interface ParsedCliArgs {
 
 export function parseCliArgs(argv: string[]): ParsedCliArgs {
   const args = [...argv];
-  const command = args.shift() ?? null;
+  let command: string | null = null;
   const positionals: string[] = [];
   const flags = new Map<string, string | boolean>();
+  let consumePositionalsOnly = false;
 
   for (let index = 0; index < args.length; index += 1) {
     const token = args[index];
-    if (!token.startsWith('--')) {
+    if (consumePositionalsOnly) {
       positionals.push(token);
+      continue;
+    }
+
+    if (token === '--') {
+      consumePositionalsOnly = true;
+      continue;
+    }
+
+    if (!token.startsWith('-') || token === '-') {
+      if (command === null) {
+        command = token;
+      } else {
+        positionals.push(token);
+      }
+      continue;
+    }
+
+    if (!token.startsWith('--')) {
+      for (const shortFlag of token.slice(1)) {
+        flags.set(shortFlag, true);
+      }
       continue;
     }
 

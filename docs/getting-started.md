@@ -6,7 +6,7 @@ adds an entity, reads world state, and captures a screenshot.
 ## Requirements
 
 - Node.js compatible with the repo and release workflow. The current release
-  workflow uses Node.js 22.
+  workflow uses Node.js 24.
 - npm.
 - A trusted local workspace.
 

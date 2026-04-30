@@ -24,7 +24,7 @@ When filing a bug, include:
 - Relevant output from `gizmo --help`, `gizmo session`, or test logs.
 
 For CLI/live-session issues, include whether the target was headless
-(`--world`) or live (`--server` / `gizmo dev`).
+(`--world`) or live (`--server` / `gizmo start` / `gizmo serve`).
 
 ## Security Issues
 

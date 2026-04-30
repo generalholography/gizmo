@@ -149,6 +149,12 @@ async function main() {
 
   try {
     await fs.access(builtCliPath);
+    const distPackage = JSON.parse(await fs.readFile(path.join(distDir, 'package.json'), 'utf8'));
+    const builtCliStat = await fs.stat(builtCliPath);
+    assert.ok(
+      (builtCliStat.mode & 0o111) !== 0,
+      'Expected dist/main.js to be executable for global npm bin shims.',
+    );
     await fs.copyFile(demoWorldPath, path.join(tmpWorkspace, 'world.json'));
     await fs.copyFile(demoWorldPath, path.join(tmpLiveWorkspace, 'world.json'));
 
@@ -167,6 +173,8 @@ async function main() {
     const installedHelp = run(installedBin, ['--help']);
     assert.match(installedHelp.stdout, /Usage: gizmo/);
     assert.match(installedHelp.stdout, /^\s*init\s+/m);
+    const installedVersion = run(installedBin, ['--version']);
+    assert.equal(installedVersion.stdout.trim(), distPackage.version);
 
     const useResult = extractFirstJsonObject(
       run(installedBin, ['use', './world.json'], { cwd: tmpWorkspace }).stdout,
@@ -232,6 +240,7 @@ async function main() {
     const tarballPackageJson = run('tar', ['-xOf', path.join(distDir, tarballName), 'package/package.json']).stdout;
     const packedPackage = JSON.parse(tarballPackageJson);
     assert.equal(packedPackage.name, '@gizmo3d/cli');
+    assert.equal(packedPackage.version, distPackage.version);
     assert.equal(packedPackage.bin?.gizmo, './main.js');
     const tarballFiles = run('tar', ['-tf', path.join(distDir, tarballName)]).stdout
       .split('\n')
@@ -337,8 +346,10 @@ async function main() {
           packedTarball: path.join(distDir, tarballName),
           validated: [
             'built-help',
+            'built-bin-executable',
             'installed-help',
             'installed-help-includes-init',
+            'installed-version',
             'workspace-use',
             'workspace-mcp-config',
             'workspace-resource',

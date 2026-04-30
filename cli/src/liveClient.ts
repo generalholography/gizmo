@@ -15,8 +15,9 @@ type BrowserRequest =
 function createStatusPanel(): HTMLDivElement {
   const panel = document.createElement('div');
   panel.style.position = 'fixed';
-  panel.style.top = '12px';
-  panel.style.left = '12px';
+  panel.style.bottom = '84px';
+  panel.style.left = '50%';
+  panel.style.transform = 'translateX(-50%)';
   panel.style.zIndex = '10000';
   panel.style.padding = '8px 10px';
   panel.style.borderRadius = '8px';
@@ -26,6 +27,8 @@ function createStatusPanel(): HTMLDivElement {
   panel.style.fontSize = '12px';
   panel.style.lineHeight = '1.5';
   panel.style.maxWidth = '360px';
+  panel.style.textAlign = 'center';
+  panel.style.whiteSpace = 'pre-line';
   panel.textContent = 'Starting live engine session...';
   document.body.appendChild(panel);
   return panel;

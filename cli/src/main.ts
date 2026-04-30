@@ -81,8 +81,11 @@ function usage(): string {
     '  commands   List available engine commands',
     '  resources  List available engine resources',
     '  session    Read one live session summary',
+    '  version    Print the installed gizmo CLI version',
     '',
     'Common options:',
+    '  -h, --help       Show help',
+    '  -v, --version    Show version',
     '  --world <path>    Local world file path',
     '  --server <url>    Live session server URL',
     '  --token <value>   Live session token for explicit --server calls',
@@ -92,6 +95,7 @@ function usage(): string {
     '  gizmo init ./my-world',
     '  gizmo use ./engine/src/worlds/live-cli-demo.json',
     '  gizmo start',
+    '  gizmo --version',
     '  gizmo resource world-state-summary',
     '  gizmo call add-entity --params \'{"archetypeOrDef":"cube"}\'',
     '  gizmo camera get',
@@ -107,6 +111,184 @@ function usage(): string {
     'JSON flags accept inline JSON or @path/to/file.json',
     'Live sessions bind to loopback by default. Use --allow-remote only for trusted networks.',
   ].join('\n');
+}
+
+function commandUsage(command: string): string {
+  const commandHelp: Record<string, string[]> = {
+    init: [
+      'Usage: gizmo init [directory-or-world.json] [options]',
+      '',
+      'Create a gizmo world file and save it as the workspace default.',
+      '',
+      'Options:',
+      '  --world <path>  World file path or workspace directory',
+      '  --force         Overwrite an existing world file',
+      '  --no-use        Do not save the world as this workspace default',
+    ],
+    use: [
+      'Usage: gizmo use <world.json>',
+      '',
+      'Save a default world file for the current workspace.',
+    ],
+    start: [
+      'Usage: gizmo start [directory-or-world.json] [options]',
+      '',
+      'Create or use a world, start a browser-backed live session, and print agent setup info.',
+      '',
+      'Options:',
+      '  --no-open       Print the browser URL without opening it',
+      '  --host <host>   Bind host; defaults to 127.0.0.1',
+      '  --port <port>   Bind port; use 0 for an ephemeral port',
+      '  --allow-remote  Permit non-loopback binding for trusted networks',
+    ],
+    serve: [
+      'Usage: gizmo serve [world.json] [options]',
+      '',
+      'Start a browser-backed live session for an existing world.',
+      '',
+      'Options:',
+      '  --host <host>   Bind host; defaults to 127.0.0.1',
+      '  --port <port>   Bind port; defaults to 4173',
+      '  --allow-remote  Permit non-loopback binding for trusted networks',
+    ],
+    call: [
+      'Usage: gizmo call <command> [options]',
+      '',
+      'Execute one automation command against a world file or live server.',
+      '',
+      'Options:',
+      '  --params <json|@file>  Command params',
+      '  --world <path>         Local world file path',
+      '  --server <url>         Live session server URL',
+      '  --token <value>        Live session token',
+      '  --dry-run              Validate against a world file without saving',
+    ],
+    batch: [
+      'Usage: gizmo batch <json|@file> [options]',
+      '',
+      'Execute a non-empty array of automation command calls.',
+      '',
+      'Options:',
+      '  --description <text>  Batch description',
+      '  --world <path>        Local world file path',
+      '  --server <url>        Live session server URL',
+      '  --token <value>       Live session token',
+      '  --dry-run             Validate against a world file without saving',
+    ],
+    resource: [
+      'Usage: gizmo resource <resource> [options]',
+      '',
+      'Read one automation resource.',
+      '',
+      'Options:',
+      '  --stable-id <id>  Stable entity ID for entity resources',
+      '  --output <path>   Write screenshot resources to a file',
+      '  --world <path>    Local world file path',
+      '  --server <url>    Live session server URL',
+      '  --token <value>   Live session token',
+    ],
+    camera: [
+      'Usage: gizmo camera [get|set|frame-entity] [options]',
+      '',
+      'Inspect or control the active viewport camera.',
+      '',
+      'Examples:',
+      '  gizmo camera get',
+      '  gizmo camera set --position \'{"x":0,"y":8,"z":18}\' --look-at \'{"x":0,"y":4,"z":0}\'',
+      '  gizmo camera frame-entity 12',
+    ],
+    snapshot: [
+      'Usage: gizmo snapshot [options]',
+      '',
+      'Capture the active render viewport into the active run artifacts directory.',
+      '',
+      'Options:',
+      '  --prefix <name>  Artifact filename prefix',
+      '  --output <path>  Explicit output path',
+      '  --server <url>   Live session server URL',
+      '  --token <value>  Live session token',
+    ],
+    mcp: [
+      'Usage: gizmo mcp [world.json] [options]',
+      '',
+      'Start the stdio MCP server for a world file or live session.',
+      '',
+      'Options:',
+      '  --world <path>    Local world file path',
+      '  --server <url>    Live session server URL',
+      '  --token <value>   Live session token',
+      '  --no-auto-save    Do not persist world-file mutations',
+    ],
+    'mcp-config': [
+      'Usage: gizmo mcp-config [world.json] [options]',
+      '',
+      'Print an MCP config snippet for the current workspace, a world file, or a live server.',
+    ],
+    clean: [
+      'Usage: gizmo clean [options]',
+      '',
+      'Remove stale gizmo run artifacts and legacy session files.',
+      '',
+      'Options:',
+      '  --all  Remove all run artifacts, not just stale artifacts',
+    ],
+    commands: [
+      'Usage: gizmo commands',
+      '',
+      'List available automation commands as JSON.',
+    ],
+    resources: [
+      'Usage: gizmo resources',
+      '',
+      'List available automation resources as JSON.',
+    ],
+    session: [
+      'Usage: gizmo session [options]',
+      '',
+      'Read the current live or world session summary.',
+      '',
+      'Options:',
+      '  --world <path>    Local world file path',
+      '  --server <url>    Live session server URL',
+      '  --token <value>   Live session token',
+    ],
+    version: [
+      'Usage: gizmo version',
+      '',
+      'Print the installed gizmo CLI version.',
+    ],
+  };
+
+  return (commandHelp[command] ?? [usage()]).join('\n');
+}
+
+async function getCliVersion(): Promise<string> {
+  const startDir = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    path.join(startDir, 'package.json'),
+    path.join(startDir, '..', 'package.json'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const packageJson = JSON.parse(await fs.readFile(candidate, 'utf8'));
+      if (packageJson?.name === '@gizmo3d/cli' && typeof packageJson.version === 'string') {
+        return packageJson.version;
+      }
+    } catch {
+      // Try the next likely package location.
+    }
+  }
+
+  throw new Error('Unable to resolve @gizmo3d/cli package version.');
+}
+
+function hasHelpFlag(parsed: ParsedCliArgs): boolean {
+  return getBooleanFlag(parsed, 'help') || getBooleanFlag(parsed, 'h');
+}
+
+function hasVersionFlag(parsed: ParsedCliArgs): boolean {
+  return getBooleanFlag(parsed, 'version') || getBooleanFlag(parsed, 'v');
 }
 
 async function handleInit(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
@@ -342,9 +524,11 @@ async function handleResource(
     const data = await session.readResource(resourceName, resourceParams);
     const defaultPrefix =
       !outputPath && (resourceName === 'render-screenshot' || resourceName === 'entity-render-screenshot')
-        ? resourceName === 'entity-render-screenshot'
-          ? `entity-screenshot-${resourceParams.stableId ?? 'capture'}`
-          : 'snapshot'
+        ? getStringFlag(parsed, 'prefix') ?? (
+            resourceName === 'entity-render-screenshot'
+              ? `entity-screenshot-${resourceParams.stableId ?? 'capture'}`
+              : 'snapshot'
+          )
         : undefined;
     if (outputPath || defaultPrefix) {
       printJson(io, await maybeWriteScreenshotOutput(data, {
@@ -367,6 +551,7 @@ async function handleCamera(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntim
   const target = await resolveCliTarget(
     {
       serverUrl: getStringFlag(parsed, 'server'),
+      token: getStringFlag(parsed, 'token'),
       worldFilePath: getStringFlag(parsed, 'world'),
     },
     cwd,
@@ -612,11 +797,26 @@ export async function runCli(argv: string[], io = defaultIo(), runtime: CliRunti
   const parsed = parseCliArgs(argv);
 
   try {
+    if (hasVersionFlag(parsed)) {
+      io.stdout(await getCliVersion());
+      return 0;
+    }
+
+    if (hasHelpFlag(parsed)) {
+      io.stdout(parsed.command ? commandUsage(parsed.command) : usage());
+      return 0;
+    }
+
     switch (parsed.command) {
       case null:
-      case 'help':
       case '--help':
         io.stdout(usage());
+        return 0;
+      case 'help':
+        io.stdout(parsed.positionals[0] ? commandUsage(parsed.positionals[0]) : usage());
+        return 0;
+      case 'version':
+        io.stdout(await getCliVersion());
         return 0;
       case 'use':
         await handleUse(parsed, io, runtime);

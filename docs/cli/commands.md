@@ -21,6 +21,17 @@ gizmo commands   List automation commands
 gizmo resources  List automation resources
 gizmo session    Read live-session summary
 gizmo clean      Remove stale run artifacts
+gizmo version    Print the installed CLI version
+```
+
+Global polish flags:
+
+```bash
+gizmo --help
+gizmo help start
+gizmo start --help
+gizmo --version
+gizmo -v
 ```
 
 ## Target Selection

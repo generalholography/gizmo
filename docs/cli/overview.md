@@ -9,6 +9,7 @@ automation commands, and capturing screenshots.
 ```bash
 npm install -g @gizmo3d/cli
 gizmo --help
+gizmo --version
 ```
 
 ## Command Families
@@ -28,6 +29,7 @@ gizmo --help
 - `gizmo resources`: list automation resources.
 - `gizmo session`: read active live-session summary.
 - `gizmo clean`: remove stale run artifacts.
+- `gizmo version`: print the installed CLI version.
 
 ## Target Resolution
 

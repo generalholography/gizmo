@@ -94,6 +94,7 @@ export function HierarchyPanel() {
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const showTasksTab = sessionConfig.capabilities.showTasksTab && Boolean(taskStore);
   const visibleTabs = useMemo(() => {
     const tabs = [];
     if (sessionConfig.capabilities.showHierarchyTab) {
@@ -105,11 +106,11 @@ export function HierarchyPanel() {
     if (sessionConfig.capabilities.showAssetsTab) {
       tabs.push('assets');
     }
-    if (sessionConfig.capabilities.showTasksTab) {
+    if (showTasksTab) {
       tabs.push('tasks');
     }
     return tabs;
-  }, [sessionConfig.capabilities]);
+  }, [sessionConfig.capabilities, showTasksTab]);
   const [activeTabKey, setActiveTabKey] = useState(visibleTabs[0] ?? 'world');
   const [treeViewportHeight, setTreeViewportHeight] = useState(0);
   const [treeViewportNode, setTreeViewportNode] = useState<HTMLDivElement | null>(null);
@@ -255,11 +256,11 @@ export function HierarchyPanel() {
 
   useEffect(() => {
     if (!taskStore || !taskSnapshot.focusTaskId) return;
-    if (!sessionConfig.capabilities.showTasksTab) return;
+    if (!showTasksTab) return;
     setActiveTabKey('tasks');
     taskStore.selectTask(taskSnapshot.focusTaskId);
     taskStore.acknowledgeFocus();
-  }, [sessionConfig.capabilities.showTasksTab, taskSnapshot.focusTaskId, taskStore]);
+  }, [showTasksTab, taskSnapshot.focusTaskId, taskStore]);
 
   const handleLoadWorld = () => {
     setIsLoadingWorld(true);
@@ -521,7 +522,7 @@ export function HierarchyPanel() {
                 </div>
               ),
             } : null,
-            sessionConfig.capabilities.showTasksTab ? {
+            showTasksTab ? {
               key: 'tasks',
               label: 'Tasks',
               children: (

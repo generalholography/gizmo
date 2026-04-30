@@ -47,3 +47,4 @@ const distPackage = {
 
 await fs.mkdir(distDir, { recursive: true });
 await fs.writeFile(distPackagePath, JSON.stringify(distPackage, null, 2) + '\n', 'utf8');
+await fs.chmod(path.join(distDir, 'main.js'), 0o755);
