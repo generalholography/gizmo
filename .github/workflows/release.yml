@@ -39,15 +39,9 @@ jobs:
       - run: npm ci
       - run: npm run build:package
       - run: npm publish --workspace=engine --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: npm publish --workspace=mcp --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: npm run build --workspace=cli
       - run: npm publish --workspace=cli --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: engine-browser-runtime

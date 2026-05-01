@@ -6,7 +6,26 @@ Gizmo follows semantic versioning for published packages under the `@gizmo3d`
 scope. Package-specific changes may also be called out in the relevant package
 README or release notes.
 
-## Unreleased
+## 0.3.1
+
+### Added
+
+- Single installable `gizmo` Agent Skill for CLI, live-session, MCP, screenshot,
+  component, and module-authoring workflows.
+- `gizmo docs` command for installed-version agent reference, including command,
+  resource, component, and module lookups.
+- Bundled npm CLI skill prompt at `dist/skills/gizmo/SKILL.md` for npm-only and
+  manual agent workflows.
+
+### Changed
+
+- README and getting-started docs now make the `npx skills add
+  generalholography/gizmo --skill gizmo` path part of the quickstart.
+- CLI package contents now include the single `gizmo` skill instead of multiple
+  task-specific skills.
+- Release workflow now uses npm trusted publishing/OIDC instead of an npm token.
+
+## 0.3.0
 
 ### Added
 
@@ -24,7 +43,5 @@ README or release notes.
   automation resources.
 - Release workflow now publishes scoped packages with explicit public access and
   creates a GitHub Release for version tags.
-
-## 0.3.0
 
 Initial public documentation baseline for the extracted Gizmo workspace.
