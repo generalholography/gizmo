@@ -35,15 +35,17 @@
     "dist/liveClient.js",
     "dist/main.js",
     "dist/package.json",
-    "dist/public"
+    "dist/public",
+    "dist/skills"
   ],
   "scripts": {
     "clean": "node scripts/cleanDist.mjs",
-    "build": "npm run clean && npm run build:node && npm run build:browser && npm run copy:public && npm run copy:readme && npm run copy:license && npm run write-dist-package-json",
+    "build": "npm run clean && npm run build:node && npm run build:browser && npm run copy:public && npm run copy:skills && npm run copy:readme && npm run copy:license && npm run write-dist-package-json",
     "build:browser": "vite build --config vite.browser.config.js",
     "build:node": "vite build --config vite.node.config.js",
     "cli": "npm run build && node dist/main.js",
     "copy:public": "mkdir -p dist/public && cp -R ../engine/public/. dist/public/",
+    "copy:skills": "mkdir -p dist/skills && cp -R ../.agents/skills/. dist/skills/",
     "copy:readme": "cp README.md dist/README.md",
     "copy:license": "cp ../LICENSE dist/LICENSE",
     "pack:dist": "npm run build && cd dist && npm pack",

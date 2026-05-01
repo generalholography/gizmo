@@ -2,6 +2,7 @@
 
 import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -77,9 +78,11 @@ function usage(): string {
     '  resource   Read one engine resource',
     '  camera     Inspect or control the active viewport camera',
     '  snapshot   Capture a render screenshot resource',
+    '  docs       Print agent-readable CLI, command, resource, component, or module docs',
     '  clean      Remove stale gizmo run artifacts and legacy session files',
     '  commands   List available engine commands',
     '  resources  List available engine resources',
+    '  skills     Locate or print bundled Gizmo Agent Skills',
     '  session    Read one live session summary',
     '  version    Print the installed gizmo CLI version',
     '',
@@ -208,6 +211,28 @@ function commandUsage(command: string): string {
       '  --server <url>   Live session server URL',
       '  --token <value>  Live session token',
     ],
+    docs: [
+      'Usage: gizmo docs [topic] [name] [options]',
+      '',
+      'Print agent-readable reference docs from the installed CLI and engine surface.',
+      '',
+      'Topics:',
+      '  cli                 CLI workflow and target selection',
+      '  workflow            Agent world-building loop',
+      '  commands            List automation commands',
+      '  command <name>      Show one automation command',
+      '  resources           List automation resources',
+      '  resource <name>     Show one automation resource',
+      '  components          List component schemas',
+      '  component <name>    Show one component schema',
+      '  modules             List runtime module types',
+      '  module <name>       Show module types for a module name or moduleName/typeName',
+      '',
+      'Options for component/module topics:',
+      '  --world <path>    Local world file path',
+      '  --server <url>    Live session server URL',
+      '  --token <value>   Live session token',
+    ],
     mcp: [
       'Usage: gizmo mcp [world.json] [options]',
       '',
@@ -241,6 +266,15 @@ function commandUsage(command: string): string {
       'Usage: gizmo resources',
       '',
       'List available automation resources as JSON.',
+    ],
+    skills: [
+      'Usage: gizmo skills [options]',
+      '',
+      'Locate or print the portable Gizmo Agent Skills bundled with the CLI.',
+      '',
+      'Options:',
+      '  --path          Print only the bundled skills directory',
+      '  --print <name>  Print one SKILL.md prompt by skill name',
     ],
     session: [
       'Usage: gizmo session [options]',
@@ -281,6 +315,43 @@ async function getCliVersion(): Promise<string> {
   }
 
   throw new Error('Unable to resolve @gizmo3d/cli package version.');
+}
+
+async function resolveBundledSkillsDir(): Promise<string> {
+  const startDir = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    path.join(startDir, 'skills'),
+    path.resolve(startDir, '../../.agents/skills'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const stat = await fs.stat(candidate);
+      if (stat.isDirectory()) {
+        return candidate;
+      }
+    } catch {
+      // Try the next likely source or bundled package location.
+    }
+  }
+
+  throw new Error('Unable to locate bundled Gizmo Agent Skills.');
+}
+
+async function listBundledSkills(skillsDir: string): Promise<Array<{ name: string; path: string }>> {
+  const entries = await fs.readdir(skillsDir, { withFileTypes: true });
+  const skills = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const skillPath = path.join(skillsDir, entry.name, 'SKILL.md');
+    try {
+      await fs.access(skillPath);
+      skills.push({ name: entry.name, path: skillPath });
+    } catch {
+      // Ignore non-skill directories.
+    }
+  }
+  return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function hasHelpFlag(parsed: ParsedCliArgs): boolean {
@@ -373,6 +444,319 @@ async function maybeWriteScreenshotOutput(
     height: data.height,
     ...(artifactOutput.run ? { runId: artifactOutput.run.id, runDir: artifactOutput.run.runDir } : {}),
   };
+}
+
+function markdownCode(value: unknown): string {
+  return `\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
+}
+
+function renderParameterList(parameters: any[] | undefined): string {
+  if (!parameters?.length) return '- No parameters.';
+  return parameters.map((param) => {
+    const required = param.required ? 'required' : 'optional';
+    const details = [
+      `- \`${param.name}\` (${param.type ?? 'unknown'}, ${required}): ${param.description ?? 'No description.'}`,
+      param.schema ? `\n\n  Schema:\n\n${markdownCode(param.schema)}` : '',
+    ].join('');
+    return details;
+  }).join('\n');
+}
+
+async function withConsoleNoiseSuppressed<T>(fn: () => Promise<T>): Promise<T> {
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  console.log = () => {};
+  console.warn = () => {};
+  try {
+    return await fn();
+  } finally {
+    console.log = originalLog;
+    console.warn = originalWarn;
+  }
+}
+
+function renderCommandDocs(commandName?: string): string {
+  const commands = listAutomationCommands();
+  if (commandName) {
+    const command = commands.find((candidate) => candidate.name === commandName);
+    if (!command) {
+      throw new Error(`Unknown automation command '${commandName}'. Run 'gizmo docs commands' to list commands.`);
+    }
+    return [
+      `# gizmo command: ${command.name}`,
+      '',
+      command.description ?? 'No description.',
+      '',
+      '## CLI Syntax',
+      '',
+      '```bash',
+      `gizmo call ${command.name} --params '<json>'`,
+      '```',
+      '',
+      '## Parameters',
+      '',
+      renderParameterList(command.parameters),
+    ].join('\n');
+  }
+
+  return [
+    '# Gizmo Automation Commands',
+    '',
+    'Use `gizmo call <name> --params \'<json>\'` for one command, or `gizmo batch \'<json-array>\'` for a logical batch.',
+    'Run `gizmo docs command <name>` for detailed parameter docs.',
+    '',
+    ...commands.map((command) => `- \`${command.name}\`: ${command.description ?? 'No description.'}`),
+  ].join('\n');
+}
+
+function renderResourceDocs(resourceName?: string): string {
+  const resources = listAutomationResourceDefinitions();
+  if (resourceName) {
+    const resource = resources.find((candidate) => candidate.name === resourceName);
+    if (!resource) {
+      throw new Error(`Unknown automation resource '${resourceName}'. Run 'gizmo docs resources' to list resources.`);
+    }
+    return [
+      `# gizmo resource: ${resource.name}`,
+      '',
+      resource.description ?? 'No description.',
+      '',
+      `- Kind: \`${resource.kind}\``,
+      `- MIME type: \`${resource.mimeType ?? 'application/json'}\``,
+      resource.aliases?.length ? `- Aliases: ${resource.aliases.map((alias) => `\`${alias}\``).join(', ')}` : '',
+      '',
+      '## CLI Syntax',
+      '',
+      '```bash',
+      `gizmo resource ${resource.name}`,
+      '```',
+      resource.name.includes('entity') ? '\nEntity resources use `--stable-id <id>` when they target an entity.' : '',
+    ].filter(Boolean).join('\n');
+  }
+
+  return [
+    '# Gizmo Automation Resources',
+    '',
+    'Use `gizmo resource <name>` to read a resource. Run `gizmo docs resource <name>` for details.',
+    '',
+    ...resources.map((resource) => `- \`${resource.name}\` (${resource.kind}): ${resource.description ?? 'No description.'}`),
+  ].join('\n');
+}
+
+function renderCliDocs(): string {
+  return [
+    '# Gizmo CLI Reference',
+    '',
+    'Recommended first run in an empty folder:',
+    '',
+    '```bash',
+    'gizmo start --no-open',
+    '```',
+    '',
+    '`gizmo start` auto-creates `world.json` when needed, writes `.gizmo/session.json`, starts a loopback live server, creates `.gizmo/runs/<run-id>/`, and prints browser plus MCP connection details.',
+    '',
+    'Target resolution order for most commands:',
+    '',
+    '1. Explicit `--server`/`--token` or `--world` flags.',
+    '2. `GIZMO_WORLD` for headless world-file work.',
+    '3. `.gizmo/session.json` in the current workspace.',
+    '',
+    'Core commands: `init`, `use`, `start`, `mcp`, `mcp-config`, `call`, `batch`, `resource`, `camera`, `snapshot`, `docs`, `skills`, `commands`, `resources`, `session`, `clean`, `version`.',
+  ].join('\n');
+}
+
+function renderWorkflowDocs(): string {
+  return [
+    '# Gizmo Agent Workflow',
+    '',
+    '1. Start or locate a session: `gizmo start --no-open`.',
+    '2. Inspect before mutating: `gizmo resource session-info`, `world-state-summary`, `entity-list`, `component-catalog`, and `module-type-catalog`.',
+    '3. Make one focused change with `gizmo call <command> --params \'<json>\'`.',
+    '4. Re-read relevant resources.',
+    '5. For visual work, use `gizmo camera frame-entity <stableId>` and `gizmo snapshot`.',
+    '',
+    'Use `stableId` as the durable public entity identity. Do not expose runtime entity IDs as public handles.',
+    '',
+    'For exact installed-version syntax, use `gizmo docs command <name>`, `gizmo docs resource <name>`, `gizmo docs component <name>`, and `gizmo docs module <moduleName/typeName>`.',
+  ].join('\n');
+}
+
+function renderComponentList(components: any[]): string {
+  return [
+    '# Gizmo Component Schemas',
+    '',
+    'Use `gizmo docs component <name>` for field details. Component docs read the active world when available.',
+    '',
+    ...components.map((component) => {
+      const required = component.requiredFields?.length ? `; required: ${component.requiredFields.join(', ')}` : '';
+      return `- \`${component.name}\`${required}`;
+    }),
+  ].join('\n');
+}
+
+function renderComponentDetail(component: any): string {
+  const fields = component.fields?.length
+    ? component.fields.map((field: any) => {
+        const bits = [
+          `- \`${field.name}\` (${field.type ?? 'unknown'}${field.required ? ', required' : ', optional'})`,
+          field.description ? `: ${field.description}` : '',
+          field.enumValues?.length ? `\n  Values: ${field.enumValues.map((value: string) => `\`${value}\``).join(', ')}` : '',
+        ];
+        return bits.join('');
+      }).join('\n')
+    : '- No fields.';
+  return [
+    `# Gizmo Component: ${component.name}`,
+    '',
+    component.displayName && component.displayName !== component.name ? `Display name: ${component.displayName}` : '',
+    `Structural: ${component.isStructural ? 'yes' : 'no'}`,
+    component.requiredFields?.length ? `Required fields: ${component.requiredFields.map((field: string) => `\`${field}\``).join(', ')}` : 'Required fields: none',
+    '',
+    '## Fields',
+    '',
+    fields,
+  ].filter(Boolean).join('\n');
+}
+
+function renderModuleList(modules: any[], filter?: string): string {
+  const filtered = filter
+    ? modules.filter((moduleType) => moduleType.moduleName === filter || `${moduleType.moduleName}/${moduleType.typeName}` === filter)
+    : modules;
+  if (filter && filtered.length === 0) {
+    throw new Error(`Unknown module '${filter}'. Run 'gizmo docs modules' to list modules.`);
+  }
+  return [
+    filter ? `# Gizmo Module Types: ${filter}` : '# Gizmo Module Types',
+    '',
+    'Runtime module types power materials, meshes, bodies, colliders, gameplay rules, conditions, actions, effects, and other reusable definitions.',
+    'Use `gizmo docs module <moduleName/typeName>` for a focused lookup when needed.',
+    '',
+    ...filtered.map((moduleType) => {
+      const persisted = moduleType.persisted ? 'custom persisted' : 'built-in';
+      const description = moduleType.description ? `: ${moduleType.description}` : '';
+      return `- \`${moduleType.moduleName}/${moduleType.typeName}\` (${persisted})${description}`;
+    }),
+    '',
+    'Custom module type syntax:',
+    '',
+    '```bash',
+    'gizmo call upsert-module-type --params \'{"moduleName":"material","typeName":"warmMatte","factorySource":"(params) => ({ type: \\"solid\\", params })"}\'',
+    '```',
+    '',
+    'Factory source is executable project code. Only author or run trusted module factories.',
+  ].join('\n');
+}
+
+async function readDocsResource(
+  resourceName: string,
+  parsed: ParsedCliArgs,
+  runtime: CliRuntime,
+): Promise<any> {
+  const cwd = runtime.cwd ?? process.cwd();
+  const hasExplicitTarget = Boolean(getStringFlag(parsed, 'server') || getStringFlag(parsed, 'world'));
+  let tempDir: string | null = null;
+
+  try {
+    try {
+      const target = await resolveCliTarget(
+        {
+          serverUrl: getStringFlag(parsed, 'server'),
+          token: getStringFlag(parsed, 'token'),
+          worldFilePath: getStringFlag(parsed, 'world'),
+        },
+        cwd,
+        runtime.env,
+      );
+      return await withConsoleNoiseSuppressed(async () => {
+        const session = await openAutomationSession(target, false);
+        try {
+          return await session.readResource(resourceName);
+        } finally {
+          await session.close?.();
+        }
+      });
+    } catch (error) {
+      if (hasExplicitTarget) throw error;
+      return await withConsoleNoiseSuppressed(async () => {
+        tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gizmo-docs-'));
+        const initialized = await initializeWorldFile(path.join(tempDir, 'world.json'), { ifMissing: true });
+        const session = await HeadlessWorldSession.open({
+          worldFilePath: initialized.worldFilePath,
+          autoSave: false,
+        });
+        try {
+          return await session.readResource(resourceName);
+        } finally {
+          await session.close?.();
+        }
+      });
+    }
+  } finally {
+    if (tempDir) {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  }
+}
+
+async function renderDocs(parsed: ParsedCliArgs, runtime: CliRuntime): Promise<string> {
+  const topic = parsed.positionals[0] ?? 'index';
+  const name = parsed.positionals[1];
+
+  switch (topic) {
+    case 'index':
+      return [
+        '# Gizmo CLI Docs',
+        '',
+        'Topics:',
+        '',
+        '- `gizmo docs cli`',
+        '- `gizmo docs workflow`',
+        '- `gizmo docs commands`',
+        '- `gizmo docs command <name>`',
+        '- `gizmo docs resources`',
+        '- `gizmo docs resource <name>`',
+        '- `gizmo docs components`',
+        '- `gizmo docs component <name>`',
+        '- `gizmo docs modules`',
+        '- `gizmo docs module <moduleName>` or `<moduleName/typeName>`',
+      ].join('\n');
+    case 'cli':
+      return renderCliDocs();
+    case 'workflow':
+      return renderWorkflowDocs();
+    case 'commands':
+      return renderCommandDocs();
+    case 'command':
+      return renderCommandDocs(name);
+    case 'resources':
+      return renderResourceDocs();
+    case 'resource':
+      return renderResourceDocs(name);
+    case 'components': {
+      const components = await readDocsResource('component-catalog', parsed, runtime);
+      return renderComponentList(components);
+    }
+    case 'component': {
+      if (!name) throw new Error("docs component requires a component name, such as 'Transform'.");
+      const components = await readDocsResource('component-catalog', parsed, runtime);
+      const component = components.find((candidate: any) => candidate.name === name || candidate.displayName === name);
+      if (!component) {
+        throw new Error(`Unknown component '${name}'. Run 'gizmo docs components' to list components.`);
+      }
+      return renderComponentDetail(component);
+    }
+    case 'modules': {
+      const modules = await readDocsResource('module-type-catalog', parsed, runtime);
+      return renderModuleList(modules);
+    }
+    case 'module': {
+      if (!name) throw new Error("docs module requires a module name, such as 'material' or 'material/solid'.");
+      const modules = await readDocsResource('module-type-catalog', parsed, runtime);
+      return renderModuleList(modules, name);
+    }
+    default:
+      throw new Error(`Unknown docs topic '${topic}'. Run 'gizmo docs' to list topics.`);
+  }
 }
 
 function getResourceParams(parsed: ParsedCliArgs): Record<string, any> {
@@ -793,6 +1177,38 @@ async function handleClean(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime
   });
 }
 
+async function handleSkills(parsed: ParsedCliArgs, io: CliIo): Promise<void> {
+  const skillsDir = await resolveBundledSkillsDir();
+  const printSkillName = getStringFlag(parsed, 'print');
+
+  if (getBooleanFlag(parsed, 'path')) {
+    io.stdout(skillsDir);
+    return;
+  }
+
+  if (printSkillName) {
+    const skills = await listBundledSkills(skillsDir);
+    const skill = skills.find((candidate) => candidate.name === printSkillName);
+    if (!skill) {
+      throw new Error(`Unknown Gizmo skill '${printSkillName}'. Run 'gizmo skills' to list bundled skills.`);
+    }
+    io.stdout(await fs.readFile(skill.path, 'utf8'));
+    return;
+  }
+
+  const skills = await listBundledSkills(skillsDir);
+  printJson(io, {
+    skillsDir,
+    skills,
+    install: {
+      npxSkillsCodex: "npx skills add generalholography/gizmo --skill gizmo -a codex -g -y",
+      npxSkillsClaudeCode: "npx skills add generalholography/gizmo --skill gizmo -a claude-code -g -y",
+      printOne: 'gizmo skills --print gizmo',
+      manualCopy: `cp -R ${skillsDir}/* <agent-skills-directory>/`,
+    },
+  });
+}
+
 export async function runCli(argv: string[], io = defaultIo(), runtime: CliRuntime = {}): Promise<number> {
   const parsed = parseCliArgs(argv);
 
@@ -867,6 +1283,9 @@ export async function runCli(argv: string[], io = defaultIo(), runtime: CliRunti
       case 'snapshot':
         await handleResource(parsed, io, runtime, 'render-screenshot');
         return 0;
+      case 'docs':
+        io.stdout(await renderDocs(parsed, runtime));
+        return 0;
       case 'clean':
         await handleClean(parsed, io, runtime);
         return 0;
@@ -875,6 +1294,9 @@ export async function runCli(argv: string[], io = defaultIo(), runtime: CliRunti
         return 0;
       case 'resources':
         printJson(io, listAutomationResourceDefinitions());
+        return 0;
+      case 'skills':
+        await handleSkills(parsed, io);
         return 0;
       case 'serve':
         await handleServe(parsed, io, runtime);

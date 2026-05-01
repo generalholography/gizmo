@@ -111,16 +111,11 @@ async function validateSkill(skillName) {
     throw new Error(`${relativeSkillPath} appears to duplicate generated resource tables`);
   }
 
-  const requiredReferences = [
-    'docs/reference/automation-commands.generated.md',
-    'docs/reference/automation-resources.generated.md',
-  ];
-  if (frontmatter.name !== 'gizmo-live-session') {
-    for (const requiredReference of requiredReferences) {
-      if (!content.includes(requiredReference)) {
-        throw new Error(`${relativeSkillPath} should reference ${requiredReference}`);
-      }
-    }
+  const docReferenceMatches = content.match(/docs\/[A-Za-z0-9_./#-]*/g) ?? [];
+  if (docReferenceMatches.length > 0 && !content.includes('Optional Repo Docs')) {
+    throw new Error(
+      `${relativeSkillPath} references repo docs outside an Optional Repo Docs section; skills must work without a source checkout`,
+    );
   }
 
   for (const link of extractMarkdownLinks(content)) {

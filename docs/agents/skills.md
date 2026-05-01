@@ -1,17 +1,14 @@
 # Gizmo Agent Skills
 
-Gizmo ships portable Agent Skills in `.agents/skills/`. These skills teach
-coding agents how to use the Gizmo CLI, live sessions, MCP server, generated
-automation references, and security model.
+Gizmo ships one portable Agent Skill in `.agents/skills/gizmo/`. The skill
+teaches coding agents how to use the Gizmo CLI, live sessions, MCP server,
+automation commands/resources, component schemas, module authoring, screenshots,
+and the security model.
 
-## Included Skills
+## Included Skill
 
-- `gizmo-world-builder`: create, inspect, modify, and validate Gizmo worlds.
-- `gizmo-live-session`: operate live sessions, camera control, screenshots,
-  tokens, and run artifacts.
-- `gizmo-mcp-integrator`: configure Codex, Claude Code, and other MCP-compatible
-  agents for `gizmo mcp` and `gizmo start`.
-- `gizmo-module-author`: author module types and module instances safely.
+- `gizmo`: create, inspect, modify, validate, and automate Gizmo worlds with
+  the CLI or MCP.
 
 There is intentionally no contributor skill yet.
 
@@ -25,6 +22,11 @@ The `.agents/skills` directory is the canonical source in this repo. Do not keep
 duplicate skill copies in agent-specific directories. If another tool needs a
 different path, install from `.agents/skills` or use the `skills` CLI.
 
+The skill must be self-contained enough to work from an installed npm CLI
+package. Agents should not need a source checkout or `docs/...` paths before
+they can inspect a world, make edits, attach MCP, author modules, or capture
+screenshots.
+
 ## Install with npx skills
 
 List available skills from the published GitHub repo:
@@ -33,22 +35,22 @@ List available skills from the published GitHub repo:
 npx skills add generalholography/gizmo --list
 ```
 
-Install all Gizmo skills for Codex globally:
+Install the Gizmo skill for Codex globally:
+
+```bash
+npx skills add generalholography/gizmo --skill gizmo -a codex -g -y
+```
+
+Install the Gizmo skill for Claude Code globally:
+
+```bash
+npx skills add generalholography/gizmo --skill gizmo -a claude-code -g -y
+```
+
+Install all repo skills, which is currently equivalent:
 
 ```bash
 npx skills add generalholography/gizmo --skill '*' -a codex -g -y
-```
-
-Install all Gizmo skills for Claude Code globally:
-
-```bash
-npx skills add generalholography/gizmo --skill '*' -a claude-code -g -y
-```
-
-Install only the world-builder skill for Codex:
-
-```bash
-npx skills add generalholography/gizmo --skill gizmo-world-builder -a codex -g -y
 ```
 
 Install from a local checkout during development:
@@ -60,28 +62,56 @@ npx skills add . --skill '*' -a codex --copy
 Use `--copy` when symlinks are not appropriate. Otherwise, symlink-based installs
 keep one source of truth.
 
+## Use Skills from the npm CLI
+
+The CLI package includes the same portable skill files. This gives npm-only users
+a local source for the prompts even when they have not cloned the repository.
+
+List the bundled skills:
+
+```bash
+npx -y @gizmo3d/cli@latest skills
+```
+
+Print one skill prompt:
+
+```bash
+npx -y @gizmo3d/cli@latest skills --print gizmo
+```
+
+Print the bundled skills directory for manual installs:
+
+```bash
+npx -y @gizmo3d/cli@latest skills --path
+```
+
 ## Manual Fallback
 
 Codex global install:
 
 ```bash
 mkdir -p ~/.codex/skills
-cp -R .agents/skills/gizmo-world-builder ~/.codex/skills/
+cp -R .agents/skills/gizmo ~/.codex/skills/
 ```
 
 Claude Code global install:
 
 ```bash
 mkdir -p ~/.claude/skills
-cp -R .agents/skills/gizmo-world-builder ~/.claude/skills/
+cp -R .agents/skills/gizmo ~/.claude/skills/
 ```
 
 ## Maintenance Rules
 
-- Keep each `SKILL.md` short and task-focused.
-- Link generated references instead of copying command/resource tables.
+- Keep each `SKILL.md` compact and task-focused.
+- Embed the small operational command/resource summaries a skill needs.
+- Prefer `gizmo docs ...`, `gizmo commands`, and `gizmo resources` for precise
+  installed-version reference details.
+- Avoid copying full generated command/resource tables into skills.
+- Treat `docs/...` links as optional repo context only, under `Optional Repo Docs`.
 - Run `npm run skills:check` after editing skills.
-- Run `npm run docs:generate` when command/resource catalogs change.
+- Run `npm run docs:generate` when command/resource catalogs change, then update
+  the embedded skill summaries if the installed agent workflow changes.
 - Keep safety warnings on every skill that can lead to CLI, MCP, live session, or
   JavaScript factory execution.
 

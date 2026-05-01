@@ -56,8 +56,10 @@ gizmo batch      Execute multiple automation commands
 gizmo resource   Read one automation resource
 gizmo camera     Inspect or control the viewport camera
 gizmo snapshot   Capture a render screenshot
+gizmo docs       Print CLI/agent reference docs
 gizmo commands   List automation commands
 gizmo resources  List automation resources
+gizmo skills     Locate or print bundled Gizmo Agent Skills
 gizmo session    Read live-session summary
 gizmo clean      Remove stale run artifacts
 gizmo version    Print the installed CLI version
@@ -180,10 +182,39 @@ gizmo resources
 
 Automation commands and resources are defined by `@gizmo3d/engine`.
 
+Agent-readable installed-version docs:
+
+```bash
+gizmo docs
+gizmo docs workflow
+gizmo docs command add-entity
+gizmo docs resource entity-bundle
+gizmo docs component Transform
+gizmo docs module material
+```
+
 Generated references:
 
 - [Automation commands](../docs/reference/automation-commands.generated.md)
 - [Automation resources](../docs/reference/automation-resources.generated.md)
+
+## Agent Skills
+
+The CLI package includes portable Gizmo Agent Skills for npm-only installs. Use
+the `skills` command when an agent needs local prompt files without a source
+checkout:
+
+```bash
+gizmo skills
+gizmo skills --path
+gizmo skills --print gizmo
+```
+
+The same skills can also be installed from the public repo:
+
+```bash
+npx skills add generalholography/gizmo --skill gizmo -a codex -g -y
+```
 
 ## Camera and Screenshots
 

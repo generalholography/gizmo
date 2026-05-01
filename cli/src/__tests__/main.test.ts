@@ -53,6 +53,43 @@ describe('CLI main', () => {
     expect(helpCommand.stdout[0]).toContain('Usage: gizmo snapshot');
   });
 
+  it('lists and prints bundled agent skills', async () => {
+    const listIo = createIo();
+    expect(await runCli(['skills'], listIo.io)).toBe(0);
+    const payload = JSON.parse(listIo.stdout[0]);
+    expect(payload.skillsDir).toEqual(expect.stringContaining('.agents/skills'));
+    expect(payload.skills).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'gizmo' }),
+      ]),
+    );
+
+    const pathIo = createIo();
+    expect(await runCli(['skills', '--path'], pathIo.io)).toBe(0);
+    expect(pathIo.stdout[0]).toBe(payload.skillsDir);
+
+    const printIo = createIo();
+    expect(await runCli(['skills', '--print', 'gizmo'], printIo.io)).toBe(0);
+    expect(printIo.stdout[0]).toContain('name: gizmo');
+    expect(printIo.stdout[0]).toContain('Agent Loop');
+  });
+
+  it('prints installed agent docs from the CLI', async () => {
+    const workflowIo = createIo();
+    expect(await runCli(['docs', 'workflow'], workflowIo.io)).toBe(0);
+    expect(workflowIo.stdout[0]).toContain('Gizmo Agent Workflow');
+
+    const commandIo = createIo();
+    expect(await runCli(['docs', 'command', 'add-entity'], commandIo.io)).toBe(0);
+    expect(commandIo.stdout[0]).toContain('gizmo call add-entity');
+    expect(commandIo.stdout[0]).toContain('archetypeOrDef');
+
+    const componentIo = createIo();
+    expect(await runCli(['docs', 'component', 'Transform'], componentIo.io)).toBe(0);
+    expect(componentIo.stdout[0]).toContain('Gizmo Component: Transform');
+    expect(componentIo.stdout[0]).toContain('position');
+  });
+
   it('executes a headless command and persists changes', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-main-'));
     const worldFilePath = path.join(tempDir, 'world.json');

@@ -17,8 +17,10 @@ gizmo batch      Execute multiple automation commands
 gizmo resource   Read one automation resource
 gizmo camera     Inspect or control the viewport camera
 gizmo snapshot   Capture a render screenshot
+gizmo docs       Print CLI/agent reference docs
 gizmo commands   List automation commands
 gizmo resources  List automation resources
+gizmo skills     Locate or print bundled Gizmo Agent Skills
 gizmo session    Read live-session summary
 gizmo clean      Remove stale run artifacts
 gizmo version    Print the installed CLI version
@@ -69,3 +71,32 @@ gizmo resource entity-bundle --stable-id 12
 Generated reference:
 
 - [Automation resources](../reference/automation-resources.generated.md)
+
+## Installed CLI Docs
+
+`gizmo docs` prints agent-readable Markdown from the installed CLI and engine
+surface. Use it when an agent needs exact syntax without a repo checkout.
+
+```bash
+gizmo docs
+gizmo docs workflow
+gizmo docs commands
+gizmo docs command add-entity
+gizmo docs resources
+gizmo docs resource entity-bundle
+gizmo docs components
+gizmo docs component Transform
+gizmo docs modules
+gizmo docs module material
+```
+
+## Agent Skills
+
+`gizmo skills` locates or prints the portable Agent Skills bundled with the npm
+CLI package.
+
+```bash
+gizmo skills
+gizmo skills --path
+gizmo skills --print gizmo
+```

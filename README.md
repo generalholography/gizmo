@@ -44,6 +44,15 @@ gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
 gizmo snapshot
 ```
 
+For coding agents, install the portable Gizmo skills from GitHub, or inspect the
+same bundled prompts from the npm CLI package:
+
+```bash
+npx skills add generalholography/gizmo --skill gizmo -a codex -g -y
+npx -y @gizmo3d/cli@latest skills --print gizmo
+npx -y @gizmo3d/cli@latest docs workflow
+```
+
 For local repo development, use the workspace scripts instead:
 
 ```bash

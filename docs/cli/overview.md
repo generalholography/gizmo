@@ -25,8 +25,10 @@ gizmo --version
 - `gizmo resource`: read one automation resource.
 - `gizmo camera`: inspect or move the viewport camera.
 - `gizmo snapshot`: capture a render screenshot.
+- `gizmo docs`: print agent-readable installed-version reference docs.
 - `gizmo commands`: list automation commands.
 - `gizmo resources`: list automation resources.
+- `gizmo skills`: locate or print bundled Gizmo Agent Skills.
 - `gizmo session`: read active live-session summary.
 - `gizmo clean`: remove stale run artifacts.
 - `gizmo version`: print the installed CLI version.

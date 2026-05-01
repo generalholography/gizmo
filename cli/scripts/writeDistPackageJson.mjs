@@ -25,6 +25,7 @@ const distPackage = {
     'main.js',
     'liveClient.js',
     'public',
+    'skills',
   ],
   keywords: ['game-engine', 'cli', 'mcp', 'editor', 'ai'],
   license: 'Apache-2.0',

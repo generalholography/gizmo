@@ -20,6 +20,20 @@ npm install -g @gizmo3d/cli
 gizmo --help
 ```
 
+For coding agents, install the Gizmo skill:
+
+```bash
+npx skills add generalholography/gizmo --skill gizmo -a codex -g -y
+```
+
+The CLI also exposes installed-version reference docs:
+
+```bash
+gizmo docs workflow
+gizmo docs command add-entity
+gizmo docs component Transform
+```
+
 For repo development, use the local workspace instead:
 
 ```bash

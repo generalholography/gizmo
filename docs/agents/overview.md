@@ -41,11 +41,17 @@ gizmo snapshot
 - Prefer small, reviewable mutations.
 - Use resources instead of guessing world state.
 
-## Future Skill Files
+## Portable Skill Files
 
-Repo-local skills should be thin task guides that reference generated command
-and resource catalogs rather than duplicating those catalogs by hand. The engine
-automation definitions are the source of truth for command and resource shapes.
+Gizmo skills must be usable after an npm-only CLI install, when the source repo
+and generated docs are not present on disk. The repo intentionally exposes one
+`gizmo` skill that is self-contained enough to operate the installed CLI or MCP
+server, with compact command/resource summaries and examples.
+
+The installed CLI is the source of truth for finer details: agents should use
+`gizmo docs ...`, `gizmo commands`, and `gizmo resources` instead of guessing
+component syntax, module syntax, command parameters, or resource names. Links to
+`docs/...` paths are optional repo context only.
 
 ## More Agent Docs
 
