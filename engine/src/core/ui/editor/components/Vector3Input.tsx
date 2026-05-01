@@ -47,7 +47,7 @@ export function Vector3Input({
           {label}
         </div>
       )}
-      <Space>
+      <Space size={4}>
         <InputNumber
           addonBefore="X"
           value={value.x}
@@ -58,7 +58,7 @@ export function Vector3Input({
           step={step}
           precision={precision}
           disabled={disabled}
-          style={{ width: '110px' }}
+          style={{ width: '92px' }}
           size="small"
         />
         <InputNumber
@@ -71,7 +71,7 @@ export function Vector3Input({
           step={step}
           precision={precision}
           disabled={disabled}
-          style={{ width: '110px' }}
+          style={{ width: '92px' }}
           size="small"
         />
         <InputNumber
@@ -84,7 +84,7 @@ export function Vector3Input({
           step={step}
           precision={precision}
           disabled={disabled}
-          style={{ width: '110px' }}
+          style={{ width: '92px' }}
           size="small"
         />
       </Space>

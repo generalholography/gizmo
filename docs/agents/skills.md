@@ -35,15 +35,16 @@ List available skills from the published GitHub repo:
 npx skills add generalholography/gizmo --list
 ```
 
-Install the Gizmo skill for Codex globally:
+Install the Gizmo skill globally:
+
+```bash
+npx skills add generalholography/gizmo --skill gizmo -g -y
+```
+
+If you need a client-specific install, pass the agent adapter explicitly:
 
 ```bash
 npx skills add generalholography/gizmo --skill gizmo -a codex -g -y
-```
-
-Install the Gizmo skill for Claude Code globally:
-
-```bash
 npx skills add generalholography/gizmo --skill gizmo -a claude-code -g -y
 ```
 
@@ -104,14 +105,19 @@ cp -R .agents/skills/gizmo ~/.claude/skills/
 ## Maintenance Rules
 
 - Keep each `SKILL.md` compact and task-focused.
-- Embed the small operational command/resource summaries a skill needs.
+- Embed the operational command/resource summaries and high-value examples a
+  skill needs to operate without repo docs.
+- Keep generated skill sections between their marker comments and update them
+  with `npm run skills:generate`.
 - Prefer `gizmo docs ...`, `gizmo commands`, and `gizmo resources` for precise
   installed-version reference details.
 - Avoid copying full generated command/resource tables into skills.
 - Treat `docs/...` links as optional repo context only, under `Optional Repo Docs`.
-- Run `npm run skills:check` after editing skills.
+- Run `npm run skills:check` after editing skills; it checks generated skill
+  content and validates portable skill structure.
 - Run `npm run docs:generate` when command/resource catalogs change, then update
-  the embedded skill summaries if the installed agent workflow changes.
+  the embedded skill reference with `npm run skills:generate` if the installed
+  agent workflow changes.
 - Keep safety warnings on every skill that can lead to CLI, MCP, live session, or
   JavaScript factory execution.
 

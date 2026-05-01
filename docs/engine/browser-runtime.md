@@ -3,17 +3,23 @@
 `@gizmo3d/engine` builds versioned browser runtime artifacts for applications
 that need to serve a specific runtime version.
 
-## Output Shape
+## Published Package Shape
 
-Engine package builds emit:
+Install the engine package and consume runtime files from npm package contents:
+
+```text
+node_modules/@gizmo3d/engine/dist/browser/<engine-version>/
+```
+
+These artifacts are owned by the engine package. Applications can copy or serve a
+chosen runtime version from the installed package as part of their build or
+deployment process.
+
+Local package builds emit the same runtime files under:
 
 ```text
 engine/dist/browser/<engine-version>/
 ```
-
-These artifacts are owned by the engine package. Applications can copy a chosen
-runtime version into their own public asset tree as part of their build or
-deployment process.
 
 ## When to Use Runtime Artifacts
 
@@ -36,5 +42,6 @@ npm run build:package --workspace=engine
 
 ## Release Note
 
-The GitHub release workflow uploads `engine/dist/browser` as the
-`engine-browser-runtime` artifact.
+npm package contents are the release contract for browser runtime files. GitHub
+Releases record tags and changelog notes; they do not distribute a separate
+browser runtime artifact.

@@ -56,7 +56,9 @@ gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
 ## Screenshots and Runs
 
 `gizmo start` creates an active run under `.gizmo/runs/<run-id>/`. Screenshot
-artifacts default to that run's `artifacts/` directory.
+artifacts and live-editor exports default to that run's `artifacts/` directory.
+Manual saves from the live editor write the visible browser world back to the
+active world file.
 
 ## Package README
 

@@ -88,14 +88,15 @@ Generated references:
 
 ## Browser Runtime Artifacts
 
-Package builds emit versioned browser runtime artifacts under:
+The published npm package includes versioned browser runtime artifacts under:
 
 ```text
-dist/browser/<engine-version>/
+node_modules/@gizmo3d/engine/dist/browser/<engine-version>/
 ```
 
 Applications that load dynamic worlds should serve the runtime version that
-matches the package version they target.
+matches the package version they target. Local package builds emit the same
+files under `engine/dist/browser/<engine-version>/` before publishing.
 
 ## Local Development
 

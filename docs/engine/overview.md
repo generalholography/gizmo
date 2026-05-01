@@ -66,9 +66,11 @@ Important source files:
 
 ## Browser Runtime Bundles
 
-Package builds emit versioned browser runtime files under
-`engine/dist/browser/<engine-version>/`. These artifacts are intended for apps
-that need to serve a specific runtime version for dynamic world compatibility.
+The published `@gizmo3d/engine` package includes versioned browser runtime files
+under `node_modules/@gizmo3d/engine/dist/browser/<engine-version>/`. These
+artifacts are intended for apps that need to serve a specific runtime version
+for dynamic world compatibility. Local builds emit the same files under
+`engine/dist/browser/<engine-version>/`.
 
 ## Package README
 

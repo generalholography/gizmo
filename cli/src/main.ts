@@ -1031,12 +1031,21 @@ async function startBrowserBackedSession(options: {
   const host = getStringFlag(parsed, 'host') ?? '127.0.0.1';
   const port = parseOptionalNumber(getStringFlag(parsed, 'port'), 'port') ?? 4173;
   const allowRemote = getBooleanFlag(parsed, 'allow-remote');
+  const run = await ensureCliRun({
+    cwd,
+    target: {
+      mode: 'live',
+      worldFilePath,
+    },
+    forceNew: true,
+  });
 
   const server = await startLiveSessionServer({
     worldFilePath,
     host,
     port,
     allowRemote,
+    artifactsDir: run.artifactsDir,
   });
 
   const info = server.getInfo();
@@ -1053,7 +1062,7 @@ async function startBrowserBackedSession(options: {
     },
     sessionCwd,
   );
-  const run = await ensureCliRun({
+  const updatedRun = await ensureCliRun({
     cwd,
     target: {
       mode: 'live',
@@ -1062,7 +1071,6 @@ async function startBrowserBackedSession(options: {
       browserUrl: info.browserUrl,
       worldFilePath,
     },
-    forceNew: true,
   });
 
   let browserOpen: { command: string; args: string[] } | null = null;
@@ -1074,7 +1082,7 @@ async function startBrowserBackedSession(options: {
   const output = buildLiveSessionOutput({
     mode: options.mode,
     liveInfo: info,
-    run,
+    run: updatedRun,
     browserOpen,
   });
   printJson(io, {

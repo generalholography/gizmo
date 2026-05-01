@@ -6,6 +6,7 @@
 
 import React, { useEffect, useLayoutEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { Dropdown, message, Typography } from 'antd';
+import type { MenuProps } from 'antd';
 import { useEditor } from './EditorContext';
 import { ComponentInspector } from './ComponentInspector';
 import { WorldInspector } from './WorldInspector';
@@ -52,22 +53,32 @@ export function InspectorPanel() {
 
   const exportTargetLabel = selectedEntity !== undefined && selectedEntity !== null ? 'Entity' : 'World';
 
-  const shareMenu = useMemo(() => ([
+  const shareMenu = useMemo<MenuProps['items']>(() => ([
     {
-      key: 'save',
-      label: 'Save World',
+      key: 'export-model:gltf',
+      label: `Export ${exportTargetLabel} as glTF`,
     },
     {
-      key: 'export',
-      label: 'Export Script',
+      key: 'export-model:glb',
+      label: `Export ${exportTargetLabel} as GLB`,
     },
     {
-      key: 'export-model',
-      label: `Export ${exportTargetLabel} Model`,
+      key: 'export-model:stl',
+      label: `Export ${exportTargetLabel} as STL`,
+    },
+    {
+      key: 'export-model:usdz',
+      label: `Export ${exportTargetLabel} as USDZ`,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'other',
+      label: 'Other',
       children: [
-        { key: 'export-model:gltf', label: `Export ${exportTargetLabel} as glTF` },
-        { key: 'export-model:glb', label: `Export ${exportTargetLabel} as GLB` },
-        { key: 'export-model:stl', label: `Export ${exportTargetLabel} as STL` },
+        { key: 'save', label: 'Download World JSON' },
+        { key: 'export', label: 'Export Script' },
       ],
     },
   ]), [exportTargetLabel]);
@@ -76,7 +87,7 @@ export function InspectorPanel() {
     setIsSaving(true);
     try {
       api.saveWorldToFile();
-      message.success('World saved');
+      message.success('World JSON downloaded');
     } catch (error) {
       console.error('Failed to save world:', error);
       message.error('Failed to save world');
@@ -85,20 +96,23 @@ export function InspectorPanel() {
     }
   };
 
-  const handleExportScript = () => {
+  const handleExportScript = async () => {
     setIsExporting(true);
     try {
       const json = serializeWorldToJSON(ctx);
       const script = loadWorldFromJSON(json);
       const blob = new Blob([script], { type: 'application/javascript' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `world-script-${Date.now()}.js`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-      message.success('World script exported');
+      const filename = `world-script-${Date.now()}.js`;
+      const exportBlob = api.getConfig().onExportBlob;
+      if (exportBlob) {
+        const result = await exportBlob({ blob, filename, mimeType: blob.type });
+        const resultMessage = result && typeof result === 'object' ? result.message : undefined;
+        const resultPath = result && typeof result === 'object' ? result.path : undefined;
+        message.success(resultMessage || (resultPath ? `World script saved to ${resultPath}` : 'World script exported'));
+      } else {
+        downloadBlob(blob, filename);
+        message.success('World script exported');
+      }
     } catch (error) {
       console.error('Failed to export script:', error);
       message.error('Failed to export script');
@@ -115,8 +129,16 @@ export function InspectorPanel() {
         eid: selectedEntity ?? undefined,
         name: inspectorTitle,
       }, format);
-      downloadBlob(payload.blob, payload.filename);
-      message.success(`${exportTargetLabel} ${format.toUpperCase()} exported`);
+      const exportBlob = api.getConfig().onExportBlob;
+      if (exportBlob) {
+        const result = await exportBlob({ blob: payload.blob, filename: payload.filename, mimeType: payload.blob.type });
+        const resultMessage = result && typeof result === 'object' ? result.message : undefined;
+        const resultPath = result && typeof result === 'object' ? result.path : undefined;
+        message.success(resultMessage || (resultPath ? `${exportTargetLabel} ${format.toUpperCase()} saved to ${resultPath}` : `${exportTargetLabel} ${format.toUpperCase()} exported`));
+      } else {
+        downloadBlob(payload.blob, payload.filename);
+        message.success(`${exportTargetLabel} ${format.toUpperCase()} exported`);
+      }
     } catch (error) {
       console.error(`Failed to export ${format} model:`, error);
       message.error(`Failed to export ${exportTargetLabel.toLowerCase()} ${format.toUpperCase()}`);
@@ -370,7 +392,7 @@ export function InspectorPanel() {
         position: 'absolute',
         top: 20,
         right: 20,
-        width: 380,
+        width: 320,
         height: 'calc(100vh - 40px)',
         maxHeight: 'calc(100vh - 40px)',
         background: EDITOR_COLORS.panel,
@@ -403,16 +425,18 @@ export function InspectorPanel() {
                   handleExportModel('glb');
                 } else if (key === 'export-model:stl') {
                   handleExportModel('stl');
-                } else {
+                } else if (key === 'export-model:usdz') {
+                  handleExportModel('usdz');
+                } else if (key === 'save') {
                   handleSaveWorld();
                 }
               }
             }}
-            onClick={handleSaveWorld}
+            onClick={() => handleExportModel('glb')}
             loading={isSaving || isExporting || isModelExporting}
             placement="bottomRight"
           >
-            Share
+            Export
           </Dropdown.Button>
         </div>
       </div>

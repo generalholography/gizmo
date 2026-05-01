@@ -245,6 +245,95 @@ describe('Live session server', () => {
     }
   }, 15000);
 
+  it('saves live browser worlds and exported artifacts through authenticated endpoints', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-live-persist-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    const artifactsDir = path.join(tempDir, '.gizmo', 'runs', 'test-run', 'artifacts');
+    tempPaths.push(tempDir);
+    await fs.writeFile(worldFilePath, JSON.stringify(createWorldDefinition({ title: 'Before Save' })), 'utf8');
+
+    let server;
+    try {
+      server = await startLiveSessionServer({
+        worldFilePath,
+        host: '127.0.0.1',
+        port: 0,
+        token: 'test-token',
+        artifactsDir,
+      });
+    } catch (error: any) {
+      if (error?.code === 'EPERM' || String(error?.message || error).includes('listen EPERM')) {
+        return;
+      }
+      throw error;
+    }
+
+    try {
+      const info = server.getInfo();
+      expect(info.artifactsDir).toBe(artifactsDir);
+
+      const savedDefinition = createWorldDefinition({ title: 'Saved From Browser' });
+      const saveResponse = await fetch(`${info.serverUrl}/api/world`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-gizmo-token': 'test-token',
+        },
+        body: JSON.stringify({
+          format: 'json',
+          definition: savedDefinition,
+        }),
+      });
+      expect(saveResponse.status).toBe(200);
+      const saved = JSON.parse(await fs.readFile(worldFilePath, 'utf8'));
+      expect(saved.title).toBe('Saved From Browser');
+
+      const artifactResponse = await fetch(`${info.serverUrl}/api/artifacts`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-gizmo-token': 'test-token',
+        },
+        body: JSON.stringify({
+          filename: '../demo export.glb',
+          mimeType: 'model/gltf-binary',
+          dataBase64: Buffer.from('glb bytes').toString('base64'),
+        }),
+      });
+      expect(artifactResponse.status).toBe(200);
+      const artifact = await artifactResponse.json();
+      expect(artifact.filename).toBe('demo-export.glb');
+      expect(artifact.path).toBe(path.join(artifactsDir, 'demo-export.glb'));
+      await expect(fs.readFile(artifact.path, 'utf8')).resolves.toBe('glb bytes');
+
+      const usdzArtifactResponse = await fetch(`${info.serverUrl}/api/artifacts`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-gizmo-token': 'test-token',
+        },
+        body: JSON.stringify({
+          mimeType: 'model/vnd.usdz+zip',
+          dataBase64: Buffer.from('usdz bytes').toString('base64'),
+        }),
+      });
+      expect(usdzArtifactResponse.status).toBe(200);
+      const usdzArtifact = await usdzArtifactResponse.json();
+      expect(usdzArtifact.filename).toMatch(/^artifact-\d+\.usdz$/);
+      expect(usdzArtifact.path).toBe(path.join(artifactsDir, usdzArtifact.filename));
+      await expect(fs.readFile(usdzArtifact.path, 'utf8')).resolves.toBe('usdz bytes');
+
+      const unauthenticatedSave = await fetch(`${info.serverUrl}/api/world`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ definition: savedDefinition }),
+      });
+      expect(unauthenticatedSave.status).toBe(401);
+    } finally {
+      await server.close();
+    }
+  }, 15000);
+
   it('rejects non-loopback hosts unless remote access is explicit', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-live-host-'));
     const worldFilePath = path.join(tempDir, 'world.json');

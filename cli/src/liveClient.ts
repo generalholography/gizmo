@@ -67,6 +67,17 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   });
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
 async function bootstrapWorld(api: any): Promise<void> {
   const worldSource = await fetchJson<{ format: 'json' | 'world-script'; source: string }>('/api/world-source');
   if (worldSource.format === 'json') {
@@ -115,6 +126,30 @@ async function start(): Promise<void> {
   const api = startEngine(canvas, {
     mode: EngineMode.EDITOR,
     hudVisible: true,
+    onSaveWorld: async () => {
+      const definition = api.serializeWorld({
+        includeEntities: true,
+        includeRuntime: false,
+      });
+      await postJson('/api/world', {
+        format: bootstrap.worldFormat,
+        definition,
+      });
+    },
+    onExportBlob: async ({ blob, filename, mimeType }: { blob: Blob; filename: string; mimeType?: string }) => {
+      const result = await postJson<{ path?: string; filename?: string; bytes?: number }>('/api/artifacts', {
+        filename,
+        mimeType: mimeType || blob.type,
+        dataBase64: arrayBufferToBase64(await blob.arrayBuffer()),
+      });
+      return {
+        path: result.path,
+        message: result.path ? `Saved to ${result.path}` : `${result.filename || filename} exported`,
+      };
+    },
+    editorSessionConfig: {
+      leftPanelCollapsedByDefault: true,
+    },
   });
 
   await bootstrapWorld(api);
@@ -128,8 +163,6 @@ async function start(): Promise<void> {
 
   statusPanel.textContent = [
     'Live session connected',
-    `World: ${summary?.title || 'Untitled World'}`,
-    `Entities: ${summary?.entityCount ?? 0}`,
     `Bridge: ${bootstrap.serverUrl}`,
   ].join('\n');
 

@@ -14,7 +14,6 @@ export interface EditorSessionCapabilities {
   showAnimationTab: boolean;
   showSimulationTab: boolean;
   showRenderTab: boolean;
-  showLoadButton: boolean;
   showSpawnTools: boolean;
   showPlayControls: boolean;
   keepPrimarySelection: boolean;
@@ -24,12 +23,14 @@ export interface EditorSessionCapabilities {
 export interface EditorSessionConfig {
   scope?: EditorSessionScope;
   primaryEntityStableId?: number;
+  leftPanelCollapsedByDefault?: boolean;
   capabilities?: Partial<EditorSessionCapabilities>;
 }
 
 export interface ResolvedEditorSessionConfig {
   scope: EditorSessionScope;
   primaryEntityStableId?: number;
+  leftPanelCollapsedByDefault: boolean;
   capabilities: EditorSessionCapabilities;
 }
 
@@ -43,7 +44,6 @@ const DEFAULT_WORLD_CAPABILITIES: EditorSessionCapabilities = {
   showAnimationTab: true,
   showSimulationTab: true,
   showRenderTab: true,
-  showLoadButton: true,
   showSpawnTools: true,
   showPlayControls: true,
   keepPrimarySelection: false,
@@ -58,7 +58,6 @@ const DEFAULT_ASSET_CAPABILITIES: EditorSessionCapabilities = {
   showAnimationTab: false,
   showSimulationTab: false,
   showRenderTab: false,
-  showLoadButton: false,
   showSpawnTools: false,
   showPlayControls: false,
   keepPrimarySelection: true,
@@ -76,6 +75,7 @@ export function resolveEditorSessionConfig(
     scope,
     primaryEntityStableId:
       typeof config?.primaryEntityStableId === 'number' ? config.primaryEntityStableId : undefined,
+    leftPanelCollapsedByDefault: Boolean(config?.leftPanelCollapsedByDefault),
     capabilities: {
       ...baseCapabilities,
       ...(config?.capabilities ?? {}),

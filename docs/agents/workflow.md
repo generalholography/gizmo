@@ -5,12 +5,21 @@ This workflow is intended for MCP-compatible coding agents editing Gizmo worlds.
 ## Start a Session
 
 ```bash
-gizmo init ./my-world
+mkdir my-world
 cd ./my-world
 gizmo start --no-open
 ```
 
-Attach the agent using the printed MCP config.
+Use `--no-open` in agent environments. Immediately tell the user the printed
+`codex.openInAppBrowserUrl` or `browserUrl` so they can watch if they want, then
+continue working without waiting for them to open it. If the environment exposes
+an in-app/local browser navigation tool, open the URL there too. In a normal
+terminal where the user expects the system browser to open, use `gizmo start`
+without `--no-open`.
+
+Attach the agent using the printed MCP config. If the global `gizmo` command is
+missing, ask the user before installing `@gizmo3d/cli@latest`, then verify with
+`gizmo --version`.
 
 ## Inspect Before Editing
 
@@ -23,6 +32,10 @@ Read these resources first:
 - `module-type-catalog`
 
 Use `entity-bundle` for precise entity inspection.
+
+If `session-info` reports that no browser client is attached, continue with
+structured edits if possible, but surface the live URL again and wait to run
+camera or screenshot workflows until a browser client is attached.
 
 ## Make Focused Mutations
 

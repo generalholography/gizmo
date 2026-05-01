@@ -23,8 +23,12 @@ gizmo --help
 For coding agents, install the Gizmo skill:
 
 ```bash
-npx skills add generalholography/gizmo --skill gizmo -a codex -g -y
+npx skills add generalholography/gizmo --skill gizmo -g -y
 ```
+
+Agents should assume the global `gizmo` command exists. If it does not, they
+should ask before running `npm install -g @gizmo3d/cli@latest`, then verify the
+install with `gizmo --version`.
 
 The CLI also exposes installed-version reference docs:
 
@@ -54,8 +58,14 @@ In an empty folder, `start` creates `world.json`, writes the active target to
 `.gizmo/session.json`, starts a local live session, creates a run directory
 under `.gizmo/runs/`, and prints browser and MCP connection details.
 
-Open the printed browser URL in a browser, or use the printed MCP config with an
-MCP-compatible coding agent.
+Use `--no-open` in agent environments. The agent should immediately show you the
+printed `browserUrl` or `codex.openInAppBrowserUrl` so you can watch if you want,
+then keep working without waiting for you to open it. If the agent has an
+in-app/local browser tool, it can open the URL there too. In a normal terminal
+where you want Gizmo to open the system browser for you, run `gizmo start`
+without `--no-open`.
+
+Use the printed MCP config with an MCP-compatible coding agent.
 
 ## Inspect World State
 
@@ -91,6 +101,10 @@ gizmo snapshot
 
 By default, screenshots are written to the active run under
 `.gizmo/runs/<run-id>/artifacts/`.
+
+The live editor uses the same run directory for GLB, glTF, STL, and USDZ model
+exports. Use the editor toolbar Save button or `Ctrl+S`/`Cmd+S` to write manual
+browser edits back to `world.json`.
 
 ## Next Steps
 

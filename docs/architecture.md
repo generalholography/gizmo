@@ -69,10 +69,12 @@ mutations. Headless sessions operate directly on the world file.
 
 ## Browser Runtime Artifacts
 
-The engine package builds versioned browser runtime assets under
-`engine/dist/browser/<engine-version>/`. Applications embedding Gizmo can copy a
-specific runtime version into their public assets to keep dynamic world loading
-compatible with published package versions.
+The published `@gizmo3d/engine` package includes versioned browser runtime
+assets under `node_modules/@gizmo3d/engine/dist/browser/<engine-version>/`.
+Applications embedding Gizmo can copy or serve a specific runtime version from
+the installed npm package to keep dynamic world loading compatible with
+published package versions. Local builds emit the same files under
+`engine/dist/browser/<engine-version>/`.
 
 ## Design Rule
 

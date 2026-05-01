@@ -6,6 +6,28 @@ Gizmo follows semantic versioning for published packages under the `@gizmo3d`
 scope. Package-specific changes may also be called out in the relevant package
 README or release notes.
 
+## 0.3.2
+
+### Added
+
+- USDZ model export for Apple Quick Look and AR sharing from the editor export
+  menu.
+- Live-session artifact export handling so embedded browsers write model exports
+  and scripts to the active `.gizmo/runs/<run-id>/artifacts/` directory.
+- Generated Agent Skill reference content sourced from the installed automation
+  command and resource catalogs.
+
+### Changed
+
+- Live sessions now persist manual browser edits back to the backing world file
+  through the editor Save control.
+- The editor starts live CLI sessions with the left panel collapsed and uses a
+  smaller, icon-forward toolbar and narrower side panes.
+- The export menu now presents standard model formats at the top level and keeps
+  legacy JSON/script downloads under Other.
+- Release docs now treat npm packages as the distribution source for runtime
+  artifacts instead of GitHub release uploads.
+
 ## 0.3.1
 
 ### Added

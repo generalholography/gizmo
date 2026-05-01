@@ -267,6 +267,8 @@ export interface EngineConfig {
         onRequestComposer?: () => void;
         /** Optional hook for editor UI to save world to Cloud Storage (Milestone 1.2) */
         onSaveWorld?: (worldId: string) => Promise<void>;
+        /** Optional hook for editor exports in embedded/live environments */
+        onExportBlob?: (payload: { blob: Blob; filename: string; mimeType?: string }) => Promise<{ path?: string; url?: string; message?: string } | void>;
         /** Optional hook for editor UI to open a new-tab play session */
         onOpenPlayMode?: (mode: 'game' | 'display') => void;
         /** Optional hook for editor UI to list available assets */

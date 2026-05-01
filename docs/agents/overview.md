@@ -7,13 +7,19 @@ targeting, and capture screenshots when visual validation matters.
 ## Recommended Live Workflow
 
 ```bash
-gizmo init ./my-world
+mkdir my-world
 cd ./my-world
 gizmo start --no-open
 ```
 
-Then attach an MCP-compatible agent using the printed `mcpConfig`, and open the
-printed browser URL when visual feedback is needed.
+In agent environments, use `--no-open`. Immediately tell the user the printed
+`codex.openInAppBrowserUrl` or `browserUrl` so they can watch if they want, then
+continue working without waiting for them to open it. If the environment exposes
+an in-app/local browser navigation tool, open the URL there too. In a normal
+terminal where the user expects the system browser to open, use `gizmo start`
+without `--no-open`.
+
+Then attach an MCP-compatible agent using the printed `mcpConfig`.
 
 ## Recommended Agent Loop
 
@@ -31,6 +37,13 @@ gizmo resource entity-list
 gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
 gizmo camera frame-entity 12
 gizmo snapshot
+```
+
+If `gizmo` is not installed, agents should ask before running:
+
+```bash
+npm install -g @gizmo3d/cli@latest
+gizmo --version
 ```
 
 ## Safety Rules

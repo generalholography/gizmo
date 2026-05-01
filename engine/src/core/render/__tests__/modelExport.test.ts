@@ -75,4 +75,18 @@ describe('buildExportScene', () => {
     expect(payload.filename.endsWith('.stl')).toBe(true);
     expect(payload.blob.size).toBeGreaterThan(0);
   });
+
+  it('exports world USDZ from common non-standard materials', async () => {
+    const ctx = createMockContext();
+    ctx.three.worldRoot.add(new THREE.Mesh(
+      new THREE.BoxGeometry(),
+      new THREE.MeshBasicMaterial({ color: 0x66ccff })
+    ));
+
+    const payload = await exportModel(ctx, { scope: 'world', name: 'World' }, 'usdz');
+
+    expect(payload.filename.endsWith('.usdz')).toBe(true);
+    expect(payload.blob.type).toBe('model/vnd.usdz+zip');
+    expect(payload.blob.size).toBeGreaterThan(0);
+  });
 });

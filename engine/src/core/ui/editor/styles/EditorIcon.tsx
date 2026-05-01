@@ -91,6 +91,8 @@ import {
   IconFileExport,
   IconFileImport,
   IconFolder,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
   // Navigation
   IconArrowUp,
   IconArrowDown,
@@ -143,6 +145,8 @@ export type EditorIconName =
   | 'shape' | 'radius'
   // Files
   | 'save' | 'export' | 'import' | 'folder'
+  // Layout
+  | 'sidebarLeftCollapse' | 'sidebarLeftExpand'
   // Navigation
   | 'arrowUp' | 'arrowDown' | 'arrowLeft' | 'arrowRight';
 
@@ -241,6 +245,9 @@ const editorIconMap: Record<EditorIconName, React.ComponentType<{ size?: number 
   export: IconFileExport,
   import: IconFileImport,
   folder: IconFolder,
+  // Layout
+  sidebarLeftCollapse: IconLayoutSidebarLeftCollapse,
+  sidebarLeftExpand: IconLayoutSidebarLeftExpand,
   // Navigation
   arrowUp: IconArrowUp,
   arrowDown: IconArrowDown,

@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+import { USDZExporter } from 'three/addons/exporters/USDZExporter.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import type { ECSContext } from '../ecs';
 import { getResource } from '../ecs';
 
-export type ModelExportFormat = 'gltf' | 'glb' | 'stl';
+export type ModelExportFormat = 'gltf' | 'glb' | 'stl' | 'usdz';
 export type ModelExportScope = 'world' | 'entity';
 
 export interface ModelExportTarget {
@@ -89,6 +90,36 @@ function buildFilename(target: ModelExportTarget, format: ModelExportFormat): st
   return `${baseName}-${Date.now()}.${format}`;
 }
 
+function normalizeUsdMaterials(scene: THREE.Scene): void {
+  scene.traverse((child) => {
+    if (!(child as THREE.Mesh).isMesh) return;
+
+    const mesh = child as THREE.Mesh;
+    const normalizeMaterial = (material: THREE.Material): THREE.Material => {
+      if ((material as THREE.MeshStandardMaterial).isMeshStandardMaterial) {
+        return material;
+      }
+
+      const source = material as THREE.MeshBasicMaterial | THREE.MeshLambertMaterial | THREE.MeshPhongMaterial;
+      return new THREE.MeshStandardMaterial({
+        color: source.color?.clone?.() ?? new THREE.Color(0xffffff),
+        map: source.map ?? null,
+        transparent: material.transparent,
+        opacity: material.opacity,
+        side: material.side,
+        emissive: (source as THREE.MeshPhongMaterial).emissive?.clone?.() ?? new THREE.Color(0x000000),
+        emissiveMap: (source as THREE.MeshPhongMaterial).emissiveMap ?? null,
+        roughness: 0.6,
+        metalness: 0,
+      });
+    };
+
+    mesh.material = Array.isArray(mesh.material)
+      ? mesh.material.map(normalizeMaterial)
+      : normalizeMaterial(mesh.material);
+  });
+}
+
 async function exportGLTF(scene: THREE.Scene, binary: boolean): Promise<Blob> {
   const exporter = new GLTFExporter();
   const result = await exporter.parseAsync(scene, {
@@ -147,13 +178,25 @@ function exportSTL(scene: THREE.Scene): Blob {
   return new Blob([String(result ?? '')], { type: 'model/stl' });
 }
 
+async function exportUSDZ(scene: THREE.Scene): Promise<Blob> {
+  normalizeUsdMaterials(scene);
+  const exporter = new USDZExporter();
+  const result = await exporter.parseAsync(scene, {
+    quickLookCompatible: true,
+    maxTextureSize: 2048,
+  });
+  return new Blob([result], { type: 'model/vnd.usdz+zip' });
+}
+
 export async function exportModel(ctx: ECSContext, target: ModelExportTarget, format: ModelExportFormat): Promise<ModelExportPayload> {
   const scene = buildExportScene(ctx, target);
   const blob = format === 'glb'
     ? await exportGLTF(scene, true)
     : format === 'gltf'
       ? await exportGLTF(scene, false)
-      : exportSTL(scene);
+      : format === 'stl'
+        ? exportSTL(scene)
+        : await exportUSDZ(scene);
 
   return {
     filename: buildFilename(target, format),

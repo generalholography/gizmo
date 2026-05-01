@@ -1,6 +1,6 @@
 {
   "name": "@gizmo3d/mcp",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "MCP server for Gizmo world automation commands and resources.",
   "license": "Apache-2.0",
   "type": "module",

@@ -1030,6 +1030,12 @@ export function EditorProvider({ children, engine, ctx, onRequestComposer, onSav
       const metaOrCtrl = event.metaKey || event.ctrlKey;
       const key = event.key.toLowerCase();
 
+      if (metaOrCtrl && key === 's' && saveWorld) {
+        event.preventDefault();
+        void saveWorld();
+        return;
+      }
+
       if (metaOrCtrl && key === 'z' && !event.shiftKey) {
         event.preventDefault();
         undo();
@@ -1074,7 +1080,7 @@ export function EditorProvider({ children, engine, ctx, onRequestComposer, onSav
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySelection, cutSelection, deleteSelection, duplicateSelection, pasteSelection, redo, undo]);
+  }, [copySelection, cutSelection, deleteSelection, duplicateSelection, pasteSelection, redo, saveWorld, undo]);
   
   const requestComposerHandler = () => {
     const next = !composerOpen;

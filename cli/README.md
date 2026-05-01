@@ -33,6 +33,12 @@ In an empty folder, `gizmo start` creates `world.json`, writes the active target
 to `.gizmo/session.json`, starts a local live session, creates a run directory
 under `.gizmo/runs/`, and prints browser and MCP setup details.
 
+Use `--no-open` in agent environments. The agent should show the printed
+`browserUrl` immediately so the user can watch if they want, then continue
+working without waiting. If the agent has an in-app/local browser tool, it can
+open the URL there too. In a normal terminal where you want Gizmo to open your
+system browser, run `gizmo start` without `--no-open`.
+
 Follow-up commands reuse the active session:
 
 ```bash
@@ -122,6 +128,11 @@ an active run, and prints:
 
 Live sessions bind to `127.0.0.1` by default and use a per-session token. Use
 `--allow-remote` only on trusted networks.
+
+In live sessions, the editor toolbar Save button writes the visible browser
+world back to the backing world file. Editor exports are saved under the active
+run's `.gizmo/runs/<run-id>/artifacts/` directory so embedded browsers do not
+need to support file downloads.
 
 The lower-level primitive is:
 
@@ -213,7 +224,15 @@ gizmo skills --print gizmo
 The same skills can also be installed from the public repo:
 
 ```bash
-npx skills add generalholography/gizmo --skill gizmo -a codex -g -y
+npx skills add generalholography/gizmo --skill gizmo -g -y
+```
+
+If an agent has the skill but `gizmo` is not installed, it should ask before
+installing the CLI:
+
+```bash
+npm install -g @gizmo3d/cli@latest
+gizmo --version
 ```
 
 ## Camera and Screenshots

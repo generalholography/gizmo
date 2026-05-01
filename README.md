@@ -27,16 +27,35 @@ The repo is a public npm workspace for the packages published under the
 
 ## Quick Start
 
+Install the CLI:
+
 ```bash
 npm install -g @gizmo3d/cli
+```
+
+For coding agents, install the portable Gizmo skill:
+
+```bash
+npx skills add generalholography/gizmo --skill gizmo -g -y
+```
+
+Then ask your agent to use Gizmo in an empty project folder. The skill teaches
+the agent to run `gizmo start --no-open`, immediately share the printed local
+browser URL so you can watch if you want, keep working without waiting for you
+to open it, inspect the world, make edits with structured commands, and capture
+screenshots.
+
+For manual CLI use:
+
+```bash
 mkdir my-world
 cd ./my-world
-gizmo start --no-open
+gizmo start
 ```
 
 In an empty folder, `gizmo start` creates `world.json`, starts a local live
-session, and prints browser and MCP connection details. Once it is running,
-follow-up commands reuse the active session:
+session, opens a browser, and prints MCP connection details. Follow-up commands
+reuse the active session:
 
 ```bash
 gizmo resource world-state-summary
@@ -44,11 +63,12 @@ gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
 gizmo snapshot
 ```
 
-For coding agents, install the portable Gizmo skills from GitHub, or inspect the
-same bundled prompts from the npm CLI package:
+Manual live-editor saves write back to `world.json`. Screenshots and live-editor
+exports are written under `.gizmo/runs/<run-id>/artifacts/`.
+
+The installed CLI also includes agent-readable reference docs:
 
 ```bash
-npx skills add generalholography/gizmo --skill gizmo -a codex -g -y
 npx -y @gizmo3d/cli@latest skills --print gizmo
 npx -y @gizmo3d/cli@latest docs workflow
 ```
@@ -174,20 +194,24 @@ npm run build --workspace=mcp
 npm run validate --workspace=cli
 ```
 
-## Release Shape
+## Publishing And Releases
 
-The engine package owns versioned browser runtime artifacts under
-`engine/dist/browser/<engine-version>/`. Applications that need dynamic world
-compatibility should consume published packages and copy the selected runtime
-version into their own public asset tree as part of their build or deployment
-process.
+npm is the public distribution source for Gizmo. Tagged releases publish
+`@gizmo3d/engine`, `@gizmo3d/cli`, and `@gizmo3d/mcp` from
+[.github/workflows/release.yml](./.github/workflows/release.yml) using npm
+trusted publishing and provenance.
 
-Publishing is handled by the release workflow in
-[.github/workflows/release.yml](./.github/workflows/release.yml). After npm
-publishing access is configured, the workflow builds, tests, validates the CLI
-package, dry-runs package contents, publishes the three public workspaces,
-uploads the engine browser runtime artifact, and creates a GitHub Release for
-version tags.
+The workflow validates the repo, builds publishable package contents, dry-runs
+package contents, publishes the three public workspaces to npm, and creates a
+GitHub Release for the version tag. GitHub Releases are the changelog and tag
+record; package contents are consumed from npm.
+
+Applications that need the engine browser runtime should install
+`@gizmo3d/engine` and copy or serve the selected runtime version from:
+
+```text
+node_modules/@gizmo3d/engine/dist/browser/<engine-version>/
+```
 
 ## Security
 

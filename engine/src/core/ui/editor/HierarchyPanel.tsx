@@ -6,7 +6,7 @@
 
 import React, { useEffect, useLayoutEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useSyncExternalStore } from 'react';
-import { Tree, Typography, Button, Input, message } from 'antd';
+import { Tree, Typography, Button, Input, Tooltip } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import { SearchOutlined } from '@ant-design/icons';
 import { useEditor } from './EditorContext';
@@ -27,6 +27,7 @@ import { EDITOR_COLORS, EDITOR_SPACING, EDITOR_TYPOGRAPHY, EDITOR_RADIUS } from 
 import { WorldMetadataModal } from './WorldMetadataModal';
 import { resolveBodyPartDisplayName } from '../../editor/utils/bodyParts';
 import { PaneTitle } from './components/PaneTitle';
+import { EditorIcon } from './styles/EditorIcon';
 
 const { Text } = Typography;
 
@@ -89,7 +90,6 @@ export function HierarchyPanel() {
   const { selectedEntities, selectedPartPaths, selectEntity, selectBodyPart, selectMultiple, taskStore, sessionConfig } = useEditor();
   const [treeData, setTreeData] = useState<HierarchyNode[]>([]);
   const [worldName, setWorldName] = useState('Untitled world');
-  const [isLoadingWorld, setIsLoadingWorld] = useState(false);
   const [isMetadataModalOpen, setIsMetadataModalOpen] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -114,6 +114,7 @@ export function HierarchyPanel() {
   const [activeTabKey, setActiveTabKey] = useState(visibleTabs[0] ?? 'world');
   const [treeViewportHeight, setTreeViewportHeight] = useState(0);
   const [treeViewportNode, setTreeViewportNode] = useState<HTMLDivElement | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(sessionConfig.leftPanelCollapsedByDefault);
 
   const taskSnapshot = useSyncExternalStore(
     taskStore?.subscribe ?? fallbackSubscribe,
@@ -261,34 +262,6 @@ export function HierarchyPanel() {
     taskStore.selectTask(taskSnapshot.focusTaskId);
     taskStore.acknowledgeFocus();
   }, [showTasksTab, taskSnapshot.focusTaskId, taskStore]);
-
-  const handleLoadWorld = () => {
-    setIsLoadingWorld(true);
-    try {
-      api.loadWorldFromFile(
-        async (worldScript) => {
-          try {
-            await api.loadWorld(worldScript);
-            message.success('World loaded');
-          } catch (error) {
-            console.error('Failed to load world:', error);
-            message.error('Failed to load world');
-          } finally {
-            setIsLoadingWorld(false);
-          }
-        },
-        (error) => {
-          console.error('Failed to load world:', error);
-          message.error('Failed to load world');
-          setIsLoadingWorld(false);
-        }
-      );
-    } catch (error) {
-      console.error('Failed to trigger world load:', error);
-      message.error('Failed to start load');
-      setIsLoadingWorld(false);
-    }
-  };
 
   const selectedKeys = useMemo(() => {
     // If no entities selected, clear tree selection
@@ -449,8 +422,8 @@ export function HierarchyPanel() {
       position: 'absolute',
       top: 20,
       left: 20,
-      width: 360,
-      height: 'calc(100vh - 40px)',
+      width: isCollapsed ? 280 : 320,
+      height: isCollapsed ? 'auto' : 'calc(100vh - 40px)',
       maxHeight: 'calc(100vh - 40px)',
       background: EDITOR_COLORS.panel,
       borderRadius: EDITOR_RADIUS.lg,
@@ -458,84 +431,85 @@ export function HierarchyPanel() {
       pointerEvents: 'auto',
       display: 'flex',
       flexDirection: 'column',
-      gap: EDITOR_SPACING.md,
+      gap: isCollapsed ? 0 : EDITOR_SPACING.md,
       overflow: 'hidden',
       minHeight: 0,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: EDITOR_SPACING.md, padding: `${PANE_INSET}px ${PANE_INSET}px 0` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: EDITOR_SPACING.md, padding: isCollapsed ? `${PANE_INSET}px` : `${PANE_INSET}px ${PANE_INSET}px 0` }}>
         <PaneTitle
           title={worldName}
           onMetadataClick={() => setIsMetadataModalOpen(true)}
           metadataAriaLabel="World options"
           size="lg"
         />
-        {sessionConfig.capabilities.showLoadButton ? (
+        <Tooltip title={isCollapsed ? 'Expand panel' : 'Collapse panel'}>
           <Button
-            type="default"
+            type="text"
             size="small"
-            onClick={handleLoadWorld}
-            loading={isLoadingWorld}
-            style={{ minWidth: 64, marginLeft: 'auto' }}
-          >
-            Load
-          </Button>
-        ) : null}
+            icon={<EditorIcon name={isCollapsed ? 'sidebarLeftExpand' : 'sidebarLeftCollapse'} size={18} />}
+            aria-label={isCollapsed ? 'Expand left panel' : 'Collapse left panel'}
+            onClick={() => setIsCollapsed((value) => !value)}
+            style={{ marginLeft: 'auto' }}
+          />
+        </Tooltip>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0 }}>
-        <PanelTabs
-          activeKey={activeTabKey}
-          onChange={(key) => setActiveTabKey(key)}
-          style={{ height: '100%' }}
-          inset={PANE_INSET}
-          items={[
-            sessionConfig.capabilities.showHierarchyTab ? {
-              key: 'world',
-              label: sessionConfig.scope === 'asset' ? 'Hierarchy' : 'World',
-              children: (
-                <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                  <div style={{ ...paneContentStyle, height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                    {hierarchyContent}
+      {!isCollapsed ? (
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <PanelTabs
+            activeKey={activeTabKey}
+            onChange={(key) => setActiveTabKey(key)}
+            style={{ height: '100%' }}
+            inset={PANE_INSET}
+            items={[
+              sessionConfig.capabilities.showHierarchyTab ? {
+                key: 'world',
+                label: sessionConfig.scope === 'asset' ? 'Hierarchy' : 'World',
+                children: (
+                  <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                    <div style={{ ...paneContentStyle, height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                      {hierarchyContent}
+                    </div>
                   </div>
-                </div>
-              ),
-            } : null,
-            sessionConfig.capabilities.showPrefabsTab ? {
-              key: 'prefabs',
-              label: 'Prefabs',
-              children: (
-                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-                  <div style={paneContentStyle}>
-                    <ArchetypeBrowser />
+                ),
+              } : null,
+              sessionConfig.capabilities.showPrefabsTab ? {
+                key: 'prefabs',
+                label: 'Prefabs',
+                children: (
+                  <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                    <div style={paneContentStyle}>
+                      <ArchetypeBrowser />
+                    </div>
                   </div>
-                </div>
-              ),
-            } : null,
-            sessionConfig.capabilities.showAssetsTab ? {
-              key: 'assets',
-              label: 'Assets',
-              children: (
-                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-                  <div style={paneContentStyle}>
-                    <AssetsBrowser />
+                ),
+              } : null,
+              sessionConfig.capabilities.showAssetsTab ? {
+                key: 'assets',
+                label: 'Assets',
+                children: (
+                  <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                    <div style={paneContentStyle}>
+                      <AssetsBrowser />
+                    </div>
                   </div>
-                </div>
-              ),
-            } : null,
-            showTasksTab ? {
-              key: 'tasks',
-              label: 'Tasks',
-              children: (
-                <div style={{ flex: 1, minHeight: 0, overflowY: 'hidden' }}>
-                  <div style={paneContentStyle}>
-                    <TasksPanel />
+                ),
+              } : null,
+              showTasksTab ? {
+                key: 'tasks',
+                label: 'Tasks',
+                children: (
+                  <div style={{ flex: 1, minHeight: 0, overflowY: 'hidden' }}>
+                    <div style={paneContentStyle}>
+                      <TasksPanel />
+                    </div>
                   </div>
-                </div>
-              ),
-            } : null,
-          ].filter(Boolean) as any}
-        />
-      </div>
+                ),
+              } : null,
+            ].filter(Boolean) as any}
+          />
+        </div>
+      ) : null}
       <WorldMetadataModal open={isMetadataModalOpen} onClose={() => setIsMetadataModalOpen(false)} />
     </div>
   );

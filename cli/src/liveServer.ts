@@ -1,5 +1,5 @@
 import http from 'node:http';
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -46,6 +46,7 @@ export interface LiveSessionServerOptions {
   port: number;
   token?: string;
   allowRemote?: boolean;
+  artifactsDir?: string;
 }
 
 export interface LiveSessionServer {
@@ -249,6 +250,55 @@ function writeHtml(res: ServerResponse, statusCode: number, html: string): void 
   res.end(html);
 }
 
+function sanitizeArtifactFilename(filename: string | undefined, mimeType: string | undefined): string {
+  const fallbackExtension = (() => {
+    switch ((mimeType ?? '').toLowerCase()) {
+      case 'model/gltf-binary':
+        return 'glb';
+      case 'model/gltf+json':
+        return 'gltf';
+      case 'model/stl':
+        return 'stl';
+      case 'model/vnd.usdz+zip':
+      case 'model/usd':
+        return 'usdz';
+      case 'application/javascript':
+      case 'text/javascript':
+        return 'js';
+      case 'application/json':
+        return 'json';
+      default:
+        return 'bin';
+    }
+  })();
+  const raw = filename?.trim() || `artifact-${Date.now()}.${fallbackExtension}`;
+  const base = path.basename(raw).replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+  return base || `artifact-${Date.now()}.${fallbackExtension}`;
+}
+
+async function writeArtifactFile(artifactsDir: string, payload: any): Promise<{ path: string; filename: string; bytes: number }> {
+  const filename = sanitizeArtifactFilename(payload?.filename, payload?.mimeType);
+  const outputPath = path.join(artifactsDir, filename);
+  const resolvedArtifactsDir = path.resolve(artifactsDir);
+  const resolvedOutputPath = path.resolve(outputPath);
+  if (!resolvedOutputPath.startsWith(`${resolvedArtifactsDir}${path.sep}`)) {
+    throw new Error('Artifact filename resolves outside the artifacts directory.');
+  }
+
+  const dataBase64 = typeof payload?.dataBase64 === 'string' ? payload.dataBase64 : '';
+  if (!dataBase64) {
+    throw new Error('Missing artifact dataBase64 payload.');
+  }
+  const data = Buffer.from(dataBase64, 'base64');
+  await fs.mkdir(resolvedArtifactsDir, { recursive: true });
+  await fs.writeFile(resolvedOutputPath, data);
+  return {
+    path: resolvedOutputPath,
+    filename,
+    bytes: data.byteLength,
+  };
+}
+
 function isLoopbackHost(host: string): boolean {
   const normalized = host.trim().toLowerCase();
   return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1';
@@ -298,6 +348,10 @@ function appendToken(url: string, token: string): string {
 
 function writeLiveSessionCookie(res: ServerResponse, token: string): void {
   res.setHeader('set-cookie', `gizmo_live_token=${encodeURIComponent(token)}; Path=/; SameSite=Strict`);
+}
+
+function loadedWorldFormatForWrite(value: unknown): WorldFileFormat {
+  return value === 'world-script' ? 'world-script' : 'json';
 }
 
 async function maybeTransformWorldScript(vite: ViteDevServer, worldFilePath: string): Promise<string> {
@@ -435,6 +489,7 @@ export async function startLiveSessionServer(options: LiveSessionServerOptions):
 
   const runtime = resolveLiveRuntimeDescriptor();
   const worldFilePath = path.resolve(options.worldFilePath);
+  const artifactsDir = options.artifactsDir ? path.resolve(options.artifactsDir) : undefined;
   const token = options.token?.trim() || createSessionToken();
   let resolvedPort = options.port;
   let serverUrl = `http://${options.host}:${resolvedPort}`;
@@ -548,8 +603,43 @@ export async function startLiveSessionServer(options: LiveSessionServerOptions):
         return;
       }
 
+      if (url.pathname === '/api/world' && req.method === 'POST') {
+        const body = await readRequestBody(req);
+        const definition = body?.definition;
+        if (!definition || typeof definition !== 'object') {
+          writeError(res, 400, 'bad-request', 'Missing world definition.');
+          return;
+        }
+        const worldFormat = loadedWorldFormatForWrite(controller.getInfo({ host: options.host, port: resolvedPort }).worldFormat);
+        await writeWorldDefinitionToFile(worldFilePath, worldFormat, definition as WorldDefinition);
+        writeJson(res, 200, {
+          ok: true,
+          worldFilePath,
+          savedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
+      if (url.pathname === '/api/artifacts' && req.method === 'POST') {
+        if (!artifactsDir) {
+          writeError(res, 409, 'artifacts-disabled', 'This live session does not have an artifacts directory.');
+          return;
+        }
+        const artifact = await writeArtifactFile(artifactsDir, await readRequestBody(req));
+        writeJson(res, 200, {
+          ok: true,
+          path: artifact.path,
+          filename: artifact.filename,
+          bytes: artifact.bytes,
+        });
+        return;
+      }
+
       if (url.pathname === '/api/session' && req.method === 'GET') {
-        writeJson(res, 200, controller.getInfo({ host: options.host, port: resolvedPort }));
+        writeJson(res, 200, {
+          ...controller.getInfo({ host: options.host, port: resolvedPort }),
+          artifactsDir,
+        });
         return;
       }
 
@@ -651,6 +741,7 @@ export async function startLiveSessionServer(options: LiveSessionServerOptions):
       token,
       serverUrl,
       browserUrl,
+      artifactsDir,
     }),
   };
 }

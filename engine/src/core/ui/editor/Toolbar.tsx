@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Button, Space, Divider, Tooltip, Dropdown } from 'antd';
+import { Button, Space, Tooltip, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import { EditorIcon } from './styles/EditorIcon';
@@ -56,7 +56,7 @@ export function Toolbar() {
       pointerEvents: 'auto',
       zIndex: 100,
     }}>
-      <Space split={<Divider type="vertical" style={{ background: '#666' }} />}>
+      <Space size="middle">
         {/* Transform Options */}
         <Space>
           <Tooltip title={`Transform Space: ${transformSpace === 'world' ? 'World' : 'Local'} (X)`}>
@@ -97,60 +97,59 @@ export function Toolbar() {
           </Tooltip>
         </Space>
         
-        {/* Save World (Milestone 1.2 - temporary for testing) */}
-        {saveWorld && (
-          <Tooltip title={lastSaved ? `Last saved: ${new Date(lastSaved).toLocaleTimeString()}` : 'Save to Cloud Storage (Ctrl+S)'}>
-            <Button
-              icon={<EditorIcon name="save" size={18} />}
-              onClick={saveWorld}
-              disabled={isSaving}
-              loading={isSaving}
-              size="middle"
-              type={lastSaved && Date.now() - lastSaved < 5000 ? 'primary' : 'default'}
-            >
-              {isSaving ? 'Saving...' : lastSaved ? 'Saved' : 'Save'}
-            </Button>
-          </Tooltip>
-        )}
-        
-        {/* Play Mode Toggle */}
-        {sessionConfig.capabilities.showPlayControls ? (
-          <Tooltip title={isPlaying ? 'Stop Playing (Ctrl+P)' : 'Play (Ctrl+P)'}>
-            {openPlayMode ? (
-              <Space.Compact>
+        <Space size={4}>
+          {saveWorld && (
+            <Tooltip title={isSaving ? 'Saving world...' : lastSaved ? `Last saved: ${new Date(lastSaved).toLocaleTimeString()}` : 'Save world (Ctrl+S)'}>
+              <Button
+                aria-label={isSaving ? 'Saving world' : 'Save world'}
+                icon={<EditorIcon name="save" size={18} />}
+                onClick={saveWorld}
+                disabled={isSaving}
+                loading={isSaving}
+                size="middle"
+                type={lastSaved && Date.now() - lastSaved < 5000 ? 'primary' : 'default'}
+              />
+            </Tooltip>
+          )}
+
+          {/* Play Mode Toggle */}
+          {sessionConfig.capabilities.showPlayControls ? (
+            <Tooltip title={isPlaying ? 'Stop Playing (Ctrl+P)' : 'Play (Ctrl+P)'}>
+              {openPlayMode ? (
+                <Space.Compact>
+                  <Button
+                    aria-label={isPlaying ? 'Stop playing' : 'Play'}
+                    type={isPlaying ? 'primary' : 'default'}
+                    danger={isPlaying}
+                    icon={<EditorIcon name={isPlaying ? 'pause' : 'play'} size={18} />}
+                    onClick={isPlaying ? exitPlayMode : enterPlayMode}
+                    size="middle"
+                    style={{ fontWeight: 'bold' }}
+                  />
+                  <Dropdown menu={{ items: playMenuItems }} disabled={isPlaying}>
+                    <Button
+                      aria-label="Open play mode options"
+                      type={isPlaying ? 'primary' : 'default'}
+                      danger={isPlaying}
+                      size="middle"
+                      icon={<DownOutlined />}
+                    />
+                  </Dropdown>
+                </Space.Compact>
+              ) : (
                 <Button
+                  aria-label={isPlaying ? 'Stop playing' : 'Play'}
                   type={isPlaying ? 'primary' : 'default'}
                   danger={isPlaying}
                   icon={<EditorIcon name={isPlaying ? 'pause' : 'play'} size={18} />}
                   onClick={isPlaying ? exitPlayMode : enterPlayMode}
-                  size="large"
+                  size="middle"
                   style={{ fontWeight: 'bold' }}
-                >
-                  {isPlaying ? 'Stop' : 'Play'}
-                </Button>
-                <Dropdown menu={{ items: playMenuItems }} disabled={isPlaying}>
-                  <Button
-                    type={isPlaying ? 'primary' : 'default'}
-                    danger={isPlaying}
-                    size="large"
-                    icon={<DownOutlined />}
-                  />
-                </Dropdown>
-              </Space.Compact>
-            ) : (
-              <Button
-                type={isPlaying ? 'primary' : 'default'}
-                danger={isPlaying}
-                icon={<EditorIcon name={isPlaying ? 'pause' : 'play'} size={18} />}
-                onClick={isPlaying ? exitPlayMode : enterPlayMode}
-                size="large"
-                style={{ fontWeight: 'bold' }}
-              >
-                {isPlaying ? 'Stop' : 'Play'}
-              </Button>
-            )}
-          </Tooltip>
-        ) : null}
+                />
+              )}
+            </Tooltip>
+          ) : null}
+        </Space>
       </Space>
     </div>
   );
