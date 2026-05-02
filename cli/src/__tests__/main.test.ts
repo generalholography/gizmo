@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { runCli } from '../main';
 import { startLiveSessionServer } from '../liveServer';
 import { ensureCliRun, getCliRunStatePath } from '../runArtifacts';
-import { readCliSessionConfig, writeCliLiveSessionConfig } from '../sessionConfig';
+import { readCliSessionConfig, writeCliLiveSessionConfig, writeCliWorldSessionConfig } from '../sessionConfig';
 import { createWorldDefinition } from '@gizmo3d/engine/automation';
 
 describe('CLI main', () => {
