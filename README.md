@@ -36,7 +36,7 @@ npm install -g @gizmo3d/cli
 For coding agents, install the portable Gizmo skill:
 
 ```bash
-npx skills add generalholography/gizmo --skill gizmo -g -y
+npx skills add generalholography/gizmo -g -y
 ```
 
 Then ask your agent to use Gizmo in an empty project folder. The skill teaches
