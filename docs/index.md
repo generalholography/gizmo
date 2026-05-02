@@ -57,7 +57,7 @@ The stable public path is the CLI/live/MCP automation flow:
 npm install -g @gizmo3d/cli
 mkdir my-world
 cd ./my-world
-gizmo start --no-open
+gizmo start --no-open --port 0
 ```
 
 The engine package exposes runtime, editor, serialization, and automation APIs

@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   getCliSessionConfigPath,
   readCliSessionConfig,
+  removeCliSessionConfig,
   resolveCliTarget,
   writeCliLiveSessionConfig,
   writeCliWorldSessionConfig,
@@ -60,6 +61,16 @@ describe('CLI session config', () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gizmo-empty-session-'));
     tempPaths.push(tempDir);
 
+    await expect(readCliSessionConfig(tempDir)).resolves.toBeNull();
+  });
+
+  it('removes workspace session config', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gizmo-remove-session-'));
+    tempPaths.push(tempDir);
+
+    await writeCliWorldSessionConfig('./world.json', tempDir);
+
+    await expect(removeCliSessionConfig(tempDir)).resolves.toBe(true);
     await expect(readCliSessionConfig(tempDir)).resolves.toBeNull();
   });
 });

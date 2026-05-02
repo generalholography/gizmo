@@ -5,6 +5,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { runCli } from '../main';
+import { startLiveSessionServer } from '../liveServer';
+import { ensureCliRun, getCliRunStatePath } from '../runArtifacts';
+import { readCliSessionConfig, writeCliLiveSessionConfig } from '../sessionConfig';
+import { createWorldDefinition } from '@gizmo3d/engine/automation';
 
 describe('CLI main', () => {
   const tempPaths: string[] = [];
@@ -301,6 +305,48 @@ describe('CLI main', () => {
     expect(entities.map((entity: any) => entity.Info?.name)).toEqual(['Batch Entity One', 'Batch Entity Two']);
   });
 
+  it('applies a complete world definition to a world file', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-apply-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    const inputPath = path.join(tempDir, 'scene.json');
+    tempPaths.push(tempDir);
+    await fs.writeFile(worldFilePath, JSON.stringify(createWorldDefinition({ title: 'Before' })), 'utf8');
+    await fs.writeFile(inputPath, JSON.stringify(createWorldDefinition({
+      title: 'Applied Scene',
+      dimensions: [
+        {
+          name: 'base',
+          chunks: [
+            {
+              chunkId: '0_0_0',
+              entities: [
+                {
+                  Info: { name: 'Applied Entity' },
+                  Transform: { position: { x: 1, y: 2, z: 3 } },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })), 'utf8');
+
+    const { io, stdout, stderr } = createIo();
+    const exitCode = await runCli(['apply', inputPath, '--world', worldFilePath], io, { cwd: tempDir });
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toEqual([]);
+    expect(JSON.parse(stdout[0])).toMatchObject({
+      ok: true,
+      mode: 'world',
+      worldFilePath,
+      changed: true,
+    });
+    const saved = JSON.parse(await fs.readFile(worldFilePath, 'utf8'));
+    expect(saved.title).toBe('Applied Scene');
+    expect(saved.dimensions[0].chunks[0].entities[0].Info.name).toBe('Applied Entity');
+  });
+
   it('saves a default world with use and reuses it for headless commands', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-use-'));
     const worldFilePath = path.join(tempDir, 'world.json');
@@ -468,6 +514,100 @@ describe('CLI main', () => {
     expect(payload.removedRunDirs).toContain(path.join(tempDir, '.gizmo', 'runs', 'stale-run'));
     await expect(fs.stat(path.join(tempDir, '.gizmo', 'runs', 'stale-run'))).rejects.toMatchObject({ code: 'ENOENT' });
   });
+
+  it('stops an active live session and clears local session state', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-stop-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    tempPaths.push(tempDir);
+    await fs.writeFile(worldFilePath, JSON.stringify(createWorldDefinition({ title: 'Stop Test' })), 'utf8');
+
+    let server;
+    try {
+      server = await startLiveSessionServer({
+        worldFilePath,
+        host: '127.0.0.1',
+        port: 0,
+        token: 'stop-token',
+      });
+    } catch (error: any) {
+      if (error?.code === 'EPERM' || String(error?.message || error).includes('listen EPERM')) {
+        return;
+      }
+      throw error;
+    }
+
+    const info = server.getInfo();
+    await writeCliLiveSessionConfig(
+      {
+        worldFilePath,
+        serverUrl: info.serverUrl,
+        token: 'stop-token',
+        browserUrl: info.browserUrl,
+      },
+      tempDir,
+    );
+    await ensureCliRun({
+      cwd: tempDir,
+      target: {
+        mode: 'live',
+        serverUrl: info.serverUrl,
+        token: 'stop-token',
+        browserUrl: info.browserUrl,
+        worldFilePath,
+      },
+    });
+
+    const { io, stdout, stderr } = createIo();
+    const exitCode = await runCli(['stop'], io, { cwd: tempDir });
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toEqual([]);
+    expect(JSON.parse(stdout[0])).toMatchObject({
+      ok: true,
+      serverUrl: info.serverUrl,
+      removedSessionConfig: true,
+      removedRunState: true,
+    });
+    await expect(readCliSessionConfig(tempDir)).resolves.toBeNull();
+    await expect(fs.stat(getCliRunStatePath(tempDir))).rejects.toMatchObject({ code: 'ENOENT' });
+  }, 15000);
+
+  it('does not clear unrelated local state when stopping an explicit server', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-stop-explicit-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    tempPaths.push(tempDir);
+    await fs.writeFile(worldFilePath, JSON.stringify(createWorldDefinition({ title: 'Explicit Stop Test' })), 'utf8');
+
+    let server;
+    try {
+      server = await startLiveSessionServer({
+        worldFilePath,
+        host: '127.0.0.1',
+        port: 0,
+        token: 'stop-token',
+      });
+    } catch (error: any) {
+      if (error?.code === 'EPERM' || String(error?.message || error).includes('listen EPERM')) {
+        return;
+      }
+      throw error;
+    }
+
+    const worldConfig = await writeCliWorldSessionConfig(worldFilePath, tempDir);
+    const info = server.getInfo();
+    const { io, stdout, stderr } = createIo();
+    const exitCode = await runCli(['stop', '--server', info.serverUrl, '--token', 'stop-token'], io, { cwd: tempDir });
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toEqual([]);
+    expect(JSON.parse(stdout[0])).toMatchObject({
+      ok: true,
+      serverUrl: info.serverUrl,
+      removedSessionConfig: false,
+      removedRunState: false,
+    });
+    await expect(readCliSessionConfig(tempDir)).resolves.toEqual(worldConfig);
+  }, 15000);
 
   it('rejects removed pre-alpha command aliases', async () => {
     const devIo = createIo();

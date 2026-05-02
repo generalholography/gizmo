@@ -245,6 +245,48 @@ describe('Live session server', () => {
     }
   }, 15000);
 
+  it('shuts down through the authenticated shutdown endpoint', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-live-shutdown-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    tempPaths.push(tempDir);
+    await fs.writeFile(worldFilePath, JSON.stringify(createWorldDefinition({ title: 'Shutdown Test' })), 'utf8');
+
+    let server;
+    try {
+      server = await startLiveSessionServer({
+        worldFilePath,
+        host: '127.0.0.1',
+        port: 0,
+        token: 'test-token',
+      });
+    } catch (error: any) {
+      if (error?.code === 'EPERM' || String(error?.message || error).includes('listen EPERM')) {
+        return;
+      }
+      throw error;
+    }
+
+    const info = server.getInfo();
+    const unauthorized = await fetch(`${info.serverUrl}/api/shutdown`, { method: 'POST' });
+    expect(unauthorized.status).toBe(401);
+
+    const response = await fetch(`${info.serverUrl}/api/shutdown`, {
+      method: 'POST',
+      headers: {
+        'x-gizmo-token': 'test-token',
+      },
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ ok: true, shuttingDown: true });
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await expect(fetch(`${info.serverUrl}/api/session`, {
+      headers: {
+        'x-gizmo-token': 'test-token',
+      },
+    })).rejects.toThrow();
+  }, 15000);
+
   it('saves live browser worlds and exported artifacts through authenticated endpoints', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-live-persist-'));
     const worldFilePath = path.join(tempDir, 'world.json');

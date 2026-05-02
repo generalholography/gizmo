@@ -14,10 +14,12 @@ gizmo mcp        Start a stdio MCP server
 gizmo mcp-config Print MCP configuration
 gizmo call       Execute one automation command
 gizmo batch      Execute multiple automation commands
+gizmo apply      Apply a complete world definition
 gizmo resource   Read one automation resource
 gizmo camera     Inspect or control the viewport camera
 gizmo snapshot   Capture a render screenshot
 gizmo docs       Print CLI/agent reference docs
+gizmo stop       Stop the active live session server
 gizmo commands   List automation commands
 gizmo resources  List automation resources
 gizmo skills     Locate or print bundled Gizmo Agent Skills
@@ -54,6 +56,20 @@ gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
 gizmo batch --calls '[{"name":"add-entity","params":{"archetypeOrDef":"cube"}}]'
 ```
 
+## Whole-World Apply
+
+Use `apply` when an agent or script generates a complete scene and needs to load
+it without hundreds of individual calls:
+
+```bash
+gizmo apply ./scene.json --world ./world.json
+gizmo apply @scene.json
+```
+
+For live sessions, `apply` updates the visible world when a browser client is
+attached. If no browser is attached, it updates the backing world file and the
+browser can load it when opened or refreshed.
+
 Generated reference:
 
 - [Automation commands](../reference/automation-commands.generated.md)
@@ -89,6 +105,17 @@ gizmo docs component Transform
 gizmo docs modules
 gizmo docs module material
 ```
+
+## Live Session Lifecycle
+
+```bash
+gizmo stop
+gizmo stop --server http://127.0.0.1:4173 --token <token>
+```
+
+`gizmo stop` asks the active live server to shut down and clears
+`.gizmo/session.json` plus `.gizmo/run.json`. It does not delete run artifacts;
+use `gizmo clean` for artifact cleanup.
 
 ## Agent Skills
 

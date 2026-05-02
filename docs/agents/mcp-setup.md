@@ -13,7 +13,7 @@ Use this when the agent only needs structured world reads and mutations.
 ## Live Setup
 
 ```bash
-gizmo start --no-open
+gizmo start --no-open --port 0
 ```
 
 Use this when the agent also needs browser rendering, camera control, and

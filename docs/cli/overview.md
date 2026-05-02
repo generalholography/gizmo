@@ -22,10 +22,12 @@ gizmo --version
 - `gizmo mcp-config`: print MCP configuration.
 - `gizmo call`: execute one automation command.
 - `gizmo batch`: execute several automation commands.
+- `gizmo apply`: apply a complete world definition.
 - `gizmo resource`: read one automation resource.
 - `gizmo camera`: inspect or move the viewport camera.
 - `gizmo snapshot`: capture a render screenshot.
 - `gizmo docs`: print agent-readable installed-version reference docs.
+- `gizmo stop`: stop the active live session server.
 - `gizmo commands`: list automation commands.
 - `gizmo resources`: list automation resources.
 - `gizmo skills`: locate or print bundled Gizmo Agent Skills.
@@ -59,6 +61,10 @@ gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
 artifacts and live-editor exports default to that run's `artifacts/` directory.
 Manual saves from the live editor write the visible browser world back to the
 active world file.
+
+Use `gizmo stop` to shut down the active live server and clear local session
+state. It preserves `.gizmo/runs/` artifacts; use `gizmo clean` to remove stale
+run directories.
 
 ## Package README
 

@@ -26,14 +26,14 @@ npm run cli --workspace=cli -- --help
 ```bash
 mkdir my-world
 cd ./my-world
-gizmo start --no-open
+gizmo start --no-open --port 0
 ```
 
 In an empty folder, `gizmo start` creates `world.json`, writes the active target
 to `.gizmo/session.json`, starts a local live session, creates a run directory
 under `.gizmo/runs/`, and prints browser and MCP setup details.
 
-Use `--no-open` in agent environments. The agent should show the printed
+Use `--no-open --port 0` in agent environments. The agent should show the printed
 `browserUrl` immediately so the user can watch if they want, then continue
 working without waiting. If the agent has an in-app/local browser tool, it can
 open the URL there too. In a normal terminal where you want Gizmo to open your
@@ -59,10 +59,12 @@ gizmo mcp        Start a stdio MCP server
 gizmo mcp-config Print MCP configuration
 gizmo call       Execute one automation command
 gizmo batch      Execute multiple automation commands
+gizmo apply      Apply a complete world definition
 gizmo resource   Read one automation resource
 gizmo camera     Inspect or control the viewport camera
 gizmo snapshot   Capture a render screenshot
 gizmo docs       Print CLI/agent reference docs
+gizmo stop       Stop the active live session server
 gizmo commands   List automation commands
 gizmo resources  List automation resources
 gizmo skills     Locate or print bundled Gizmo Agent Skills
@@ -113,7 +115,7 @@ Target resolution order:
 ## Live Sessions
 
 ```bash
-gizmo start ./world.json --no-open
+gizmo start ./world.json --no-open --port 0
 ```
 
 `start` is the recommended local workflow. It starts a live server, optionally
@@ -260,6 +262,17 @@ gizmo clean --all
 
 `clean` removes stale `.gizmo/runs/*` directories for the current workspace. It
 does not delete world files.
+
+## Stop Live Sessions
+
+```bash
+gizmo stop
+```
+
+`stop` asks the active live session server from `.gizmo/session.json` to shut
+down, then clears local session and run state. It leaves artifacts in
+`.gizmo/runs/` so snapshots and exports remain available. Use `gizmo clean` when
+you want to remove stale artifacts.
 
 ## Local Development
 

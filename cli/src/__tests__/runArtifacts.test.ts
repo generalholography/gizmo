@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  clearCliRunState,
   cleanCliArtifacts,
   createCliArtifactOutputPath,
   ensureCliRun,
@@ -102,5 +103,22 @@ describe('CLI run artifacts', () => {
     expect(result.removedRunState).toBe(true);
     expect(result.removedRunDirs).toContain(active.runDir);
     await expect(fs.stat(getCliRunStatePath(tempDir))).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('clears active run state without deleting artifacts', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gizmo-run-state-clear-'));
+    tempPaths.push(tempDir);
+
+    const active = await ensureCliRun({
+      cwd: tempDir,
+      target: {
+        mode: 'live',
+        serverUrl: 'http://127.0.0.1:4321',
+      },
+    });
+
+    await expect(clearCliRunState(tempDir)).resolves.toBe(true);
+    await expect(readCliRunConfig(tempDir)).resolves.toBeNull();
+    await expect(fs.stat(active.runDir)).resolves.toBeDefined();
   });
 });

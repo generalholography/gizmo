@@ -64,7 +64,7 @@ npm run cli --workspace=cli -- start ./engine/src/worlds/live-cli-demo.json --no
 Or with an installed CLI:
 
 ```bash
-gizmo start /absolute/path/to/world.json --no-open
+gizmo start /absolute/path/to/world.json --no-open --port 0
 ```
 
 For JavaScript examples, remember that world scripts execute code. Only run

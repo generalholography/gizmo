@@ -51,19 +51,19 @@ npm run cli --workspace=cli -- --help
 ```bash
 mkdir my-world
 cd ./my-world
-gizmo start --no-open
+gizmo start --no-open --port 0
 ```
 
 In an empty folder, `start` creates `world.json`, writes the active target to
 `.gizmo/session.json`, starts a local live session, creates a run directory
 under `.gizmo/runs/`, and prints browser and MCP connection details.
 
-Use `--no-open` in agent environments. The agent should immediately show you the
-printed `browserUrl` or `codex.openInAppBrowserUrl` so you can watch if you want,
-then keep working without waiting for you to open it. If the agent has an
-in-app/local browser tool, it can open the URL there too. In a normal terminal
-where you want Gizmo to open the system browser for you, run `gizmo start`
-without `--no-open`.
+Use `--no-open --port 0` in agent environments. The agent should immediately
+show you the printed `browserUrl` or `codex.openInAppBrowserUrl` so you can
+watch if you want, then keep working without waiting for you to open it. If the
+agent has an in-app/local browser tool, it can open the URL there once. In a
+normal terminal where you want Gizmo to open the system browser for you, run
+`gizmo start` without `--no-open`.
 
 Use the printed MCP config with an MCP-compatible coding agent.
 
@@ -105,6 +105,12 @@ By default, screenshots are written to the active run under
 The live editor uses the same run directory for GLB, glTF, STL, and USDZ model
 exports. Use the editor toolbar Save button or `Ctrl+S`/`Cmd+S` to write manual
 browser edits back to `world.json`.
+
+When you are done with a live session, stop the local server:
+
+```bash
+gizmo stop
+```
 
 ## Next Steps
 

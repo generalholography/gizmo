@@ -106,6 +106,18 @@ export async function readCliRunConfig(cwd = process.cwd()): Promise<CliRunConfi
   }
 }
 
+export async function clearCliRunState(cwd = process.cwd()): Promise<boolean> {
+  try {
+    await fs.rm(getCliRunStatePath(cwd), { force: true });
+    return true;
+  } catch (error: any) {
+    if (error?.code === 'ENOENT') {
+      return false;
+    }
+    throw new Error(`Failed to clear CLI run state: ${error?.message || error}`);
+  }
+}
+
 async function writeCliRunConfig(config: CliRunConfig, cwd = process.cwd()): Promise<CliRunConfig> {
   const statePath = getCliRunStatePath(cwd);
   await fs.mkdir(path.dirname(statePath), { recursive: true });

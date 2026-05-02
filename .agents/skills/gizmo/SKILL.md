@@ -8,7 +8,8 @@ compatibility: Requires the gizmo CLI and a trusted local workspace.
 # Gizmo
 
 Use this skill when creating, editing, inspecting, or validating Gizmo worlds
-with the `gizmo` CLI or MCP.
+with the `gizmo` CLI or MCP. For visual creation tasks, optimize for fast first
+edits: start the live session, show the user the URL, then build immediately.
 
 ## Safety
 
@@ -17,7 +18,7 @@ and persisted runtime module factories can execute code. Live sessions bind to
 `127.0.0.1` by default and use a per-session token; treat printed browser URLs,
 tokens, and portable MCP configs as local secrets.
 
-## First Run
+## Golden Path For Agents
 
 Assume the `gizmo` CLI is installed globally. Verify when needed:
 
@@ -31,30 +32,38 @@ If `gizmo` is missing, ask the user before installing it:
 npm install -g @gizmo3d/cli@latest
 ```
 
-In an empty folder, start the recommended live workflow:
+In an empty folder or task workspace, start the recommended agent workflow:
 
 ```bash
-gizmo start --no-open
+gizmo start --no-open --port 0
 ```
 
 `start` auto-creates `world.json` when needed, writes `.gizmo/session.json`,
 starts a browser-backed live session, creates `.gizmo/runs/<run-id>/`, and
 prints browser plus MCP connection details.
 
-Launch mode:
+Immediately tell the user:
 
-- In agent environments, use `gizmo start --no-open` by default.
-- Immediately tell the user the printed `codex.openInAppBrowserUrl` or
-  `browserUrl` so they can watch the live world if they want.
-- Do not stop and wait for the user to open the link. Keep working with CLI/MCP
-  commands after surfacing the URL.
-- If your environment exposes an in-app/local browser navigation tool, open the
-  printed URL there as well. If it does not, clearly report the URL and continue.
-- In a normal user terminal where the user expects the browser to open, use
-  `gizmo start` without `--no-open`.
-- For file-only/headless edits, use `gizmo init`, `gizmo use`, or explicit
-  `--world`; do not use screenshots or viewport camera validation unless a live
-  browser is attached.
+```text
+Live Gizmo preview: <browserUrl>
+I will keep building now; open it if you want to watch.
+```
+
+Then continue working. Do not wait for the user to open the link.
+
+Launch rules:
+
+- In agent environments, use `gizmo start --no-open --port 0`.
+- Do not use the default port in agent workflows; `--port 0` avoids stale
+  session conflicts.
+- Do not open a system browser unless the user asked for that. If the current
+  environment has an in-app/local browser navigation tool, open the printed URL
+  there once; otherwise just report the URL and continue.
+- If a live command says no browser client is attached, do not retry in a loop
+  and do not open Chrome just to fix it. Keep making file-backed edits with
+  `--world ./world.json`; use screenshots only after a browser is attached.
+- In a normal human terminal where the user expects Gizmo to open the browser,
+  use `gizmo start` without `--no-open`.
 
 For headless file work:
 
@@ -66,24 +75,41 @@ gizmo use ./world.json
 
 ## Agent Loop
 
-0. When visual work is requested, start or attach a live session and surface the
-   live URL to the user before making edits. If no browser is attached, continue
-   with structured edits, but wait to use camera/screenshot validation until a
-   browser client is available.
-1. Inspect before mutating:
-   - `gizmo resource session-info`
-   - `gizmo resource world-state-summary`
-   - `gizmo resource entity-list`
-   - `gizmo resource component-catalog`
-   - `gizmo resource module-type-catalog`
-2. Make one focused change:
-   - `gizmo call <command> --params '<json>'`
-   - `gizmo batch '<json-array>'` only when changes are one logical operation.
-3. Re-read relevant resources.
-4. For visual work:
-   - `gizmo camera frame-entity <stableId>`
-   - `gizmo camera set --position '<json>' --look-at '<json>'`
-   - `gizmo snapshot`
+For visual creation tasks:
+
+1. Start: `gizmo start --no-open --port 0`.
+2. Surface the printed URL to the user and keep going.
+3. Build the first meaningful version immediately.
+4. Read only the resource you need next, usually `world-state-summary` or
+   `entity-list`. Do not front-load full catalog discovery unless blocked.
+5. Iterate in small, named passes.
+6. Once a browser is attached, validate visually with camera moves and snapshots.
+7. At the end of a temporary live task, run `gizmo stop`.
+
+Fast build options:
+
+- For a complete generated scene, write a full world definition JSON and run:
+
+  ```bash
+  gizmo apply ./scene.json --world ./world.json
+  ```
+
+- For live sessions with an attached browser, `gizmo apply ./scene.json` updates
+  the visible world.
+- For incremental edits, use `gizmo call <command> --params '<json>'`.
+- For a logical group of incremental edits, use `gizmo batch @calls.json`.
+- Avoid using `reinitialize-world` directly unless `gizmo docs command
+  reinitialize-world` shows that it is the exact installed-version behavior you
+  need. Prefer `gizmo apply` for whole-world replacement.
+
+Visual validation:
+
+```bash
+gizmo camera set --position '{"x":0,"y":8,"z":18}' --look-at '{"x":0,"y":2,"z":0}'
+gizmo snapshot --prefix check
+```
+
+Only use camera/snapshot commands after a browser client is attached.
 
 Use `stableId` as the durable public entity identity. Do not expose runtime
 entity IDs as public handles.
@@ -106,14 +132,17 @@ gizmo resources
 
 Core commands:
 
-- `gizmo start --no-open`: recommended live workflow; auto-inits in empty folders.
+- `gizmo start --no-open --port 0`: recommended agent workflow; auto-inits in empty folders.
 - `gizmo mcp`: start stdio MCP for the active workspace or explicit world.
 - `gizmo mcp-config`: print MCP configuration.
 - `gizmo resource <name>`: read world/session state.
 - `gizmo call <name> --params '<json>'`: mutate the world.
+- `gizmo batch @calls.json`: run a logical batch of incremental edits.
+- `gizmo apply ./scene.json`: apply a complete world definition.
 - `gizmo camera get|set|frame-entity`: inspect/control the viewport camera.
 - `gizmo snapshot`: capture the live viewport into `.gizmo/runs/.../artifacts`.
 - `gizmo docs ...`: read installed-version docs for finer syntax.
+- `gizmo stop`: stop the active live server and clear local session state.
 
 Live editor persistence:
 
@@ -122,6 +151,8 @@ Live editor persistence:
 - Live editor exports are written to `.gizmo/runs/<run-id>/artifacts/` instead
   of relying on browser downloads. Use this path when an embedded browser, such
   as Codex's in-app browser, blocks downloads.
+- When the user is done with the session, run `gizmo stop`. It preserves
+  artifacts; use `gizmo clean` later for stale run cleanup.
 
 Common resources:
 
@@ -246,10 +277,10 @@ gizmo batch '[{"name":"add-entity","params":{"archetypeOrDef":"cube"}},{"name":"
 
 ### Visual Iteration Pattern
 
-1. Open the live browser URL before editing.
-2. Make a small structural change.
-3. Re-read `entity-list` or the targeted `entity-bundle`.
-4. Move the camera with `frame-entity` or `camera set`.
+1. Start with `gizmo start --no-open --port 0`, surface the live URL, and keep working.
+2. Make a meaningful first build immediately; do not wait for browser attachment.
+3. If no browser is attached, continue with file-backed edits such as `gizmo apply ./scene.json --world ./world.json`.
+4. Once a browser is attached, move the camera with `frame-entity` or `camera set`.
 5. Capture `gizmo snapshot` and compare against the user request.
 6. Repeat from another camera angle for spatial work.
 
@@ -270,9 +301,9 @@ For headless MCP:
 }
 ```
 
-For live MCP, run `gizmo start --no-open` and use the printed `mcpConfig` in the
-same workspace, or `portableMcpConfig` when explicit server/token details are
-needed.
+For live MCP, run `gizmo start --no-open --port 0` and use the printed
+`mcpConfig` in the same workspace, or `portableMcpConfig` when explicit
+server/token details are needed.
 
 ## Module Authoring
 
@@ -299,7 +330,7 @@ command <name>` for exact command parameters.
 
 - If `gizmo` is not found, ask before running `npm install -g
   @gizmo3d/cli@latest`, then verify with `gizmo --version`.
-- If commands cannot find a server, rerun `gizmo start --no-open`.
+- If commands cannot find a server, rerun `gizmo start --no-open --port 0`.
 - If live commands say no browser client is attached, surface the printed
   `browserUrl` or `codex.openInAppBrowserUrl`, open it yourself only if your
   environment has a browser tool, and retry visual-only operations after a

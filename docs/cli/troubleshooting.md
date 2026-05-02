@@ -31,7 +31,7 @@ gizmo use /absolute/path/to/world.json
 Start `start` again from the workspace:
 
 ```bash
-gizmo start --no-open
+gizmo start --no-open --port 0
 ```
 
 Then retry the command. `start` refreshes `.gizmo/session.json`.

@@ -1,6 +1,6 @@
 {
   "name": "@gizmo3d/engine",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Browser 3D runtime, editor APIs, world serialization, and automation layer for Gizmo.",
   "license": "Apache-2.0",
   "main": "dist/src/index.js",

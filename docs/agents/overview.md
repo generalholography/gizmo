@@ -9,25 +9,25 @@ targeting, and capture screenshots when visual validation matters.
 ```bash
 mkdir my-world
 cd ./my-world
-gizmo start --no-open
+gizmo start --no-open --port 0
 ```
 
-In agent environments, use `--no-open`. Immediately tell the user the printed
-`codex.openInAppBrowserUrl` or `browserUrl` so they can watch if they want, then
-continue working without waiting for them to open it. If the environment exposes
-an in-app/local browser navigation tool, open the URL there too. In a normal
-terminal where the user expects the system browser to open, use `gizmo start`
-without `--no-open`.
+In agent environments, use `--no-open --port 0`. Immediately tell the user the
+printed `codex.openInAppBrowserUrl` or `browserUrl` so they can watch if they
+want, then continue working without waiting for them to open it. If the
+environment exposes an in-app/local browser navigation tool, open the URL there
+once. In a normal terminal where the user expects the system browser to open,
+use `gizmo start` without `--no-open`.
 
 Then attach an MCP-compatible agent using the printed `mcpConfig`.
 
 ## Recommended Agent Loop
 
-1. Read `session-info` or `world-state-summary`.
-2. Read `entity-list` and targeted `entity-bundle` resources.
-3. Make one focused change with `call` or MCP tools.
-4. Re-read relevant resources.
-5. Use `camera` and `snapshot` for visual validation in live sessions.
+1. Start the session, show the URL, and make a meaningful first edit immediately.
+2. Read only the resource needed next, usually `world-state-summary` or `entity-list`.
+3. Use `gizmo apply ./scene.json --world ./world.json` for complete generated scenes.
+4. Use `call`, `batch`, or MCP tools for focused incremental edits.
+5. Use `camera` and `snapshot` only after a browser client is attached.
 
 ## CLI Commands Useful to Agents
 
@@ -35,6 +35,7 @@ Then attach an MCP-compatible agent using the printed `mcpConfig`.
 gizmo resource world-state-summary
 gizmo resource entity-list
 gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
+gizmo apply ./scene.json --world ./world.json
 gizmo camera frame-entity 12
 gizmo snapshot
 ```

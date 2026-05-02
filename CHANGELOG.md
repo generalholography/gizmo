@@ -6,6 +6,25 @@ Gizmo follows semantic versioning for published packages under the `@gizmo3d`
 scope. Package-specific changes may also be called out in the relevant package
 README or release notes.
 
+## 0.3.3
+
+### Added
+
+- `gizmo apply` for applying a complete world definition to a world file or live
+  session, giving agents a reliable bulk scene path.
+- `gizmo stop` lifecycle support for shutting down active live servers and
+  clearing local session/run state.
+
+### Changed
+
+- Agent workflows now default to `gizmo start --no-open --port 0`, surface the
+  live URL immediately, and continue building without waiting for browser
+  attachment.
+- `gizmo start` and `gizmo serve` now fall back to an ephemeral port when the
+  default port is already occupied and no explicit `--port` was provided.
+- The Gizmo Agent Skill now gives stricter low-freedom instructions for visual
+  creation, no-browser fallback, bulk scene application, validation, and cleanup.
+
 ## 0.3.2
 
 ### Added

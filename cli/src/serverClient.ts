@@ -84,3 +84,10 @@ export async function readLiveServerResource(
 export async function readLiveServerSession(serverUrl: string, token?: string): Promise<any> {
   return await request<any>(serverUrl, '/api/session', { token });
 }
+
+export async function stopLiveServer(serverUrl: string, token?: string): Promise<any> {
+  return await request<any>(serverUrl, '/api/shutdown', {
+    method: 'POST',
+    token,
+  });
+}

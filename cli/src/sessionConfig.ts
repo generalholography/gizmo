@@ -87,6 +87,18 @@ export async function readCliSessionConfig(cwd = process.cwd()): Promise<CliSess
   return await readConfigFromPath(getCliSessionConfigPath(cwd));
 }
 
+export async function removeCliSessionConfig(cwd = process.cwd()): Promise<boolean> {
+  try {
+    await fs.rm(getCliSessionConfigPath(cwd), { force: true });
+    return true;
+  } catch (error: any) {
+    if (error?.code === 'ENOENT') {
+      return false;
+    }
+    throw new Error(`Failed to remove CLI session config: ${error?.message || error}`);
+  }
+}
+
 async function writeCliSessionConfig(config: CliSessionConfig, cwd = process.cwd()): Promise<CliSessionConfig> {
   const configPath = getCliSessionConfigPath(cwd);
   await fs.mkdir(path.dirname(configPath), { recursive: true });

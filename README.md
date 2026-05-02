@@ -40,10 +40,10 @@ npx skills add generalholography/gizmo --skill gizmo -g -y
 ```
 
 Then ask your agent to use Gizmo in an empty project folder. The skill teaches
-the agent to run `gizmo start --no-open`, immediately share the printed local
-browser URL so you can watch if you want, keep working without waiting for you
-to open it, inspect the world, make edits with structured commands, and capture
-screenshots.
+the agent to run `gizmo start --no-open --port 0`, immediately share the printed
+local browser URL so you can watch if you want, keep working without waiting for
+you to open it, make the first edits quickly, and capture screenshots once a
+browser is attached.
 
 For manual CLI use:
 
@@ -65,6 +65,12 @@ gizmo snapshot
 
 Manual live-editor saves write back to `world.json`. Screenshots and live-editor
 exports are written under `.gizmo/runs/<run-id>/artifacts/`.
+
+When you are done, stop the local live server:
+
+```bash
+gizmo stop
+```
 
 The installed CLI also includes agent-readable reference docs:
 
@@ -150,7 +156,7 @@ resources, camera control, and screenshots.
 ```bash
 mkdir my-world
 cd ./my-world
-gizmo start --no-open
+gizmo start --no-open --port 0
 gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
 ```
 

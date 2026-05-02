@@ -34,7 +34,7 @@ the MCP args can be:
 Start:
 
 ```bash
-gizmo start --no-open
+gizmo start --no-open --port 0
 ```
 
 Then use the printed `mcpConfig` for agents running in the same workspace, or

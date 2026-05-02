@@ -27,10 +27,12 @@ import { LiveAutomationSession } from './liveSession';
 import { openUrl } from './openUrl';
 import {
   readLiveServerSession,
+  stopLiveServer,
 } from './serverClient';
 import {
   getCliSessionConfigPath,
   readCliSessionConfig,
+  removeCliSessionConfig,
   resolveCliTarget,
   resolveDefaultWorldFilePath,
   writeCliLiveSessionConfig,
@@ -38,12 +40,13 @@ import {
 } from './sessionConfig';
 import {
   cleanCliArtifacts,
+  clearCliRunState,
   createCliArtifactOutputPath,
   ensureCliRun,
   type CliRunConfig,
 } from './runArtifacts';
 import { buildLiveSessionOutput } from './liveSessionOutput';
-import { initializeWorldFile, resolveInitWorldFilePath } from './worldFile';
+import { initializeWorldFile, loadWorldFile, resolveInitWorldFilePath, writeWorldDefinitionToFile } from './worldFile';
 
 export interface CliIo {
   stdout: (text: string) => void;
@@ -75,10 +78,12 @@ function usage(): string {
     '  serve      Start a browser-backed live session server for an existing world',
     '  call       Execute one engine command against a world file or live server',
     '  batch      Execute a batch of engine commands',
+    '  apply      Apply a complete world definition to the active target',
     '  resource   Read one engine resource',
     '  camera     Inspect or control the active viewport camera',
     '  snapshot   Capture a render screenshot resource',
     '  docs       Print agent-readable CLI, command, resource, component, or module docs',
+    '  stop       Stop the active live session server',
     '  clean      Remove stale gizmo run artifacts and legacy session files',
     '  commands   List available engine commands',
     '  resources  List available engine resources',
@@ -101,10 +106,12 @@ function usage(): string {
     '  gizmo --version',
     '  gizmo resource world-state-summary',
     '  gizmo call add-entity --params \'{"archetypeOrDef":"cube"}\'',
+    '  gizmo apply @world.json',
     '  gizmo camera get',
     '  gizmo camera set --position \'{"x":0,"y":8,"z":18}\' --look-at \'{"x":0,"y":4,"z":0}\'',
     '  gizmo camera frame-entity 12',
     '  gizmo serve',
+    '  gizmo stop',
     '  gizmo call add-entity --dry-run --params \'{"archetypeOrDef":"cube"}\'',
     '',
     'Saved defaults:',
@@ -143,6 +150,8 @@ function commandUsage(command: string): string {
       '  --host <host>   Bind host; defaults to 127.0.0.1',
       '  --port <port>   Bind port; use 0 for an ephemeral port',
       '  --allow-remote  Permit non-loopback binding for trusted networks',
+      '',
+      'If the default port is already in use and --port was not provided, Gizmo falls back to an ephemeral port.',
     ],
     serve: [
       'Usage: gizmo serve [world.json] [options]',
@@ -153,6 +162,8 @@ function commandUsage(command: string): string {
       '  --host <host>   Bind host; defaults to 127.0.0.1',
       '  --port <port>   Bind port; defaults to 4173',
       '  --allow-remote  Permit non-loopback binding for trusted networks',
+      '',
+      'If the default port is already in use and --port was not provided, Gizmo falls back to an ephemeral port.',
     ],
     call: [
       'Usage: gizmo call <command> [options]',
@@ -177,6 +188,17 @@ function commandUsage(command: string): string {
       '  --server <url>        Live session server URL',
       '  --token <value>       Live session token',
       '  --dry-run             Validate against a world file without saving',
+    ],
+    apply: [
+      'Usage: gizmo apply <world.json|@file|json> [options]',
+      '',
+      'Apply a complete world definition to the active target.',
+      '',
+      'Options:',
+      '  --input <json|@file>  World definition JSON',
+      '  --world <path>        Local world file path',
+      '  --server <url>        Live session server URL',
+      '  --token <value>       Live session token',
     ],
     resource: [
       'Usage: gizmo resource <resource> [options]',
@@ -256,6 +278,16 @@ function commandUsage(command: string): string {
       '',
       'Options:',
       '  --all  Remove all run artifacts, not just stale artifacts',
+    ],
+    stop: [
+      'Usage: gizmo stop [options]',
+      '',
+      'Stop the active browser-backed live session server and clear local session state.',
+      '',
+      'Options:',
+      '  --server <url>   Live session server URL',
+      '  --token <value>  Live session token',
+      '  --keep-session   Do not remove .gizmo/session.json or .gizmo/run.json',
     ],
     commands: [
       'Usage: gizmo commands',
@@ -387,7 +419,7 @@ async function handleInit(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime)
     mcpConfig: buildMcpConfig({ worldFilePath: initialized.worldFilePath }),
     nextSteps: [
       `cd ${workspaceDir}`,
-      'Run gizmo start --no-open to start a browser-backed live session for Codex or another agent.',
+      'Run gizmo start --no-open --port 0 to start a browser-backed live session for Codex or another agent.',
       'Run gizmo mcp to attach a headless MCP session to this world.',
     ],
   });
@@ -502,7 +534,7 @@ function renderCommandDocs(commandName?: string): string {
   return [
     '# Gizmo Automation Commands',
     '',
-    'Use `gizmo call <name> --params \'<json>\'` for one command, or `gizmo batch \'<json-array>\'` for a logical batch.',
+    'Use `gizmo call <name> --params \'<json>\'` for one command, `gizmo batch @calls.json` for a logical batch, or `gizmo apply ./scene.json` for a complete world definition.',
     'Run `gizmo docs command <name>` for detailed parameter docs.',
     '',
     ...commands.map((command) => `- \`${command.name}\`: ${command.description ?? 'No description.'}`),
@@ -550,7 +582,7 @@ function renderCliDocs(): string {
     'Recommended first run in an empty folder:',
     '',
     '```bash',
-    'gizmo start --no-open',
+    'gizmo start --no-open --port 0',
     '```',
     '',
     '`gizmo start` auto-creates `world.json` when needed, writes `.gizmo/session.json`, starts a loopback live server, creates `.gizmo/runs/<run-id>/`, and prints browser plus MCP connection details.',
@@ -561,7 +593,7 @@ function renderCliDocs(): string {
     '2. `GIZMO_WORLD` for headless world-file work.',
     '3. `.gizmo/session.json` in the current workspace.',
     '',
-    'Core commands: `init`, `use`, `start`, `mcp`, `mcp-config`, `call`, `batch`, `resource`, `camera`, `snapshot`, `docs`, `skills`, `commands`, `resources`, `session`, `clean`, `version`.',
+    'Core commands: `init`, `use`, `start`, `mcp`, `mcp-config`, `call`, `batch`, `apply`, `resource`, `camera`, `snapshot`, `docs`, `skills`, `commands`, `resources`, `session`, `stop`, `clean`, `version`.',
   ].join('\n');
 }
 
@@ -569,11 +601,12 @@ function renderWorkflowDocs(): string {
   return [
     '# Gizmo Agent Workflow',
     '',
-    '1. Start or locate a session: `gizmo start --no-open`.',
-    '2. Inspect before mutating: `gizmo resource session-info`, `world-state-summary`, `entity-list`, `component-catalog`, and `module-type-catalog`.',
-    '3. Make one focused change with `gizmo call <command> --params \'<json>\'`.',
-    '4. Re-read relevant resources.',
-    '5. For visual work, use `gizmo camera frame-entity <stableId>` and `gizmo snapshot`.',
+    '1. Start a robust agent session: `gizmo start --no-open --port 0`.',
+    '2. Immediately surface the printed browser URL to the user, then keep working.',
+    '3. Make a meaningful first edit before deep inspection.',
+    '4. For full generated scenes, use `gizmo apply ./scene.json --world ./world.json`.',
+    '5. For incremental edits, use `gizmo call <command> --params \'<json>\'` or `gizmo batch @calls.json`.',
+    '6. Once a browser client is attached, use `gizmo camera ...` and `gizmo snapshot` for visual validation.',
     '',
     'Use `stableId` as the durable public entity identity. Do not expose runtime entity IDs as public handles.',
     '',
@@ -879,6 +912,68 @@ async function handleBatch(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime
   }
 }
 
+async function handleApply(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
+  const cwd = runtime.cwd ?? process.cwd();
+  const input = getPositionalOrFlag(parsed, 0, 'input') ?? getStringFlag(parsed, 'input');
+  if (!input) {
+    throw new Error('apply requires a world definition as the first argument or via --input.');
+  }
+  const definition = await parseJsonFlag<Record<string, any>>(input.startsWith('@') || input.trim().startsWith('{') ? input : `@${input}`, cwd);
+  const target = await resolveCliTarget(
+    {
+      serverUrl: getStringFlag(parsed, 'server'),
+      token: getStringFlag(parsed, 'token'),
+      worldFilePath: getStringFlag(parsed, 'world'),
+    },
+    cwd,
+    runtime.env,
+  );
+
+  if (target.mode === 'world') {
+    const current = await loadWorldFile(target.worldFilePath).catch(() => ({ format: 'json' as const }));
+    await writeWorldDefinitionToFile(target.worldFilePath, current.format, definition as any);
+    printJson(io, {
+      ok: true,
+      mode: 'world',
+      worldFilePath: target.worldFilePath,
+      changed: true,
+    });
+    return;
+  }
+
+  const info = await readLiveServerSession(target.serverUrl, target.token);
+  if (info.browserReady) {
+    const session = await openAutomationSession(target, true);
+    try {
+      printJson(io, {
+        ok: true,
+        mode: 'live',
+        serverUrl: target.serverUrl,
+        ...(await session.callTool('reinitialize-world', { definition })),
+      });
+    } finally {
+      await session.close?.();
+    }
+    return;
+  }
+
+  if (!target.worldFilePath) {
+    throw new Error('Live session has no backing world file and no browser client is attached.');
+  }
+
+  const current = await loadWorldFile(target.worldFilePath).catch(() => ({ format: 'json' as const }));
+  await writeWorldDefinitionToFile(target.worldFilePath, current.format, definition as any);
+  printJson(io, {
+    ok: true,
+    mode: 'live',
+    serverUrl: target.serverUrl,
+    worldFilePath: target.worldFilePath,
+    changed: true,
+    browserReady: false,
+    note: 'Updated the backing world file. Open or refresh the live browser to load the new world.',
+  });
+}
+
 async function handleResource(
   parsed: ParsedCliArgs,
   io: CliIo,
@@ -1029,7 +1124,8 @@ async function startBrowserBackedSession(options: {
       };
   const worldFilePath = resolved.worldFilePath;
   const host = getStringFlag(parsed, 'host') ?? '127.0.0.1';
-  const port = parseOptionalNumber(getStringFlag(parsed, 'port'), 'port') ?? 4173;
+  const explicitPort = getStringFlag(parsed, 'port');
+  const port = parseOptionalNumber(explicitPort, 'port') ?? 4173;
   const allowRemote = getBooleanFlag(parsed, 'allow-remote');
   const run = await ensureCliRun({
     cwd,
@@ -1040,13 +1136,34 @@ async function startBrowserBackedSession(options: {
     forceNew: true,
   });
 
-  const server = await startLiveSessionServer({
-    worldFilePath,
-    host,
-    port,
-    allowRemote,
-    artifactsDir: run.artifactsDir,
-  });
+  let server;
+  let portFallback: { from: number; to: number; reason: string } | null = null;
+  try {
+    server = await startLiveSessionServer({
+      worldFilePath,
+      host,
+      port,
+      allowRemote,
+      artifactsDir: run.artifactsDir,
+    });
+  } catch (error: any) {
+    if (explicitPort === undefined && (error?.code === 'EADDRINUSE' || String(error?.message || '').includes('EADDRINUSE'))) {
+      portFallback = {
+        from: port,
+        to: 0,
+        reason: `Port ${port} was already in use.`,
+      };
+      server = await startLiveSessionServer({
+        worldFilePath,
+        host,
+        port: 0,
+        allowRemote,
+        artifactsDir: run.artifactsDir,
+      });
+    } else {
+      throw error;
+    }
+  }
 
   const info = server.getInfo();
   const sessionCwd = options.autoInit && resolved.initialized ? path.dirname(worldFilePath) : cwd;
@@ -1087,6 +1204,7 @@ async function startBrowserBackedSession(options: {
   });
   printJson(io, {
     ...output,
+    ...(portFallback ? { portFallback } : {}),
     ...(resolved.initialized ? {
       initializedWorld: {
         worldFilePath: resolved.initialized.worldFilePath,
@@ -1182,6 +1300,33 @@ async function handleClean(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime
   printJson(io, {
     ...result,
     runsDir: path.join(path.resolve(cwd, '.gizmo'), 'runs'),
+  });
+}
+
+async function handleStop(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
+  const cwd = runtime.cwd ?? process.cwd();
+  const explicitServerUrl = getStringFlag(parsed, 'server');
+  const explicitToken = getStringFlag(parsed, 'token');
+  const keepSession = getBooleanFlag(parsed, 'keep-session');
+  const savedConfig = await readCliSessionConfig(cwd);
+  const serverUrl = explicitServerUrl ?? (savedConfig?.mode === 'live' ? savedConfig.serverUrl : undefined);
+  const token = explicitToken ?? (savedConfig?.mode === 'live' ? savedConfig.token : undefined);
+
+  if (!serverUrl) {
+    throw new Error('No active live session to stop. Pass --server <url> or run `gizmo start` first.');
+  }
+
+  const stopped = await stopLiveServer(serverUrl, token);
+  const shouldClearLocalState = !keepSession && savedConfig?.mode === 'live' && savedConfig.serverUrl === serverUrl;
+  const removedSessionConfig = shouldClearLocalState ? await removeCliSessionConfig(cwd) : false;
+  const removedRunState = shouldClearLocalState ? await clearCliRunState(cwd) : false;
+
+  printJson(io, {
+    ok: true,
+    serverUrl,
+    stopped,
+    removedSessionConfig,
+    removedRunState,
   });
 }
 
@@ -1282,6 +1427,9 @@ export async function runCli(argv: string[], io = defaultIo(), runtime: CliRunti
       case 'batch':
         await handleBatch(parsed, io, runtime);
         return 0;
+      case 'apply':
+        await handleApply(parsed, io, runtime);
+        return 0;
       case 'resource':
         await handleResource(parsed, io, runtime);
         return 0;
@@ -1296,6 +1444,9 @@ export async function runCli(argv: string[], io = defaultIo(), runtime: CliRunti
         return 0;
       case 'clean':
         await handleClean(parsed, io, runtime);
+        return 0;
+      case 'stop':
+        await handleStop(parsed, io, runtime);
         return 0;
       case 'commands':
         printJson(io, listAutomationCommands());

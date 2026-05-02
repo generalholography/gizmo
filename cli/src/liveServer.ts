@@ -524,6 +524,7 @@ export async function startLiveSessionServer(options: LiveSessionServerOptions):
     worldFilePath,
     transformWorldScript: async (entryPath) => await maybeTransformWorldScript(vite, entryPath),
   });
+  let closing = false;
 
   const server = http.createServer(async (req, res) => {
     try {
@@ -643,6 +644,24 @@ export async function startLiveSessionServer(options: LiveSessionServerOptions):
         return;
       }
 
+      if (url.pathname === '/api/shutdown' && req.method === 'POST') {
+        writeJson(res, 200, {
+          ok: true,
+          shuttingDown: true,
+          serverUrl,
+          worldFilePath,
+        });
+        if (!closing) {
+          closing = true;
+          setTimeout(() => {
+            server.close(() => {
+              void vite.close();
+            });
+          }, 0);
+        }
+        return;
+      }
+
       if (url.pathname === '/api/commands' && req.method === 'GET') {
         writeJson(res, 200, listAutomationCommands());
         return;
@@ -725,6 +744,11 @@ export async function startLiveSessionServer(options: LiveSessionServerOptions):
 
   return {
     close: async () => {
+      if (closing) {
+        await vite.close().catch(() => undefined);
+        return;
+      }
+      closing = true;
       await new Promise<void>((resolve, reject) => {
         server.close((error) => {
           if (error) {

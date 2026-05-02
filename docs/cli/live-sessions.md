@@ -6,17 +6,17 @@ automation command/resource model as headless sessions.
 ## Start the Recommended Workflow
 
 ```bash
-gizmo start ./world.json --no-open
+gizmo start ./world.json --no-open --port 0
 ```
 
 `start` starts a live server, writes session metadata to `.gizmo/session.json`,
 creates an active run under `.gizmo/runs/`, and prints browser and MCP setup
 details.
 
-Use `--no-open` in agent environments. The agent should immediately show the
-printed `browserUrl` or `codex.openInAppBrowserUrl` so the user can watch if
-they want, then continue working without waiting. If the agent has an
-in-app/local browser tool, it can open the URL there too. In a regular terminal
+Use `--no-open --port 0` in agent environments. The agent should immediately
+show the printed `browserUrl` or `codex.openInAppBrowserUrl` so the user can
+watch if they want, then continue working without waiting. If the agent has an
+in-app/local browser tool, it can open the URL there once. In a regular terminal
 where you want Gizmo to open the system browser, omit `--no-open`:
 
 ```bash
@@ -38,9 +38,21 @@ After `start`, commands can usually omit `--server`:
 ```bash
 gizmo resource world-state-summary
 gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
+gizmo apply ./scene.json --world ./world.json
 gizmo camera get
 gizmo snapshot
 ```
+
+## Stop a Live Session
+
+```bash
+gizmo stop
+```
+
+`stop` sends an authenticated shutdown request to the active live server from
+`.gizmo/session.json`, then clears local session and run state. It does not
+delete `.gizmo/runs/` artifacts, so screenshots and exports remain available.
+Use `gizmo clean` later to remove stale run directories.
 
 ## Saving and Exports
 
