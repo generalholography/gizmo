@@ -222,6 +222,7 @@ common shapes, then use `gizmo docs ...` for exact installed-version detail.
 - `metadata`: World metadata (title, description, dimensions). params: none
 - `achievements`: List of all achievements. params: none
 - `full-world-state`: Complete serialized world state. params: none
+- `scene-evaluation`: Deterministic scene validation and evaluation report for loadability, inventory, bounds, intersections, and coplanar z-fighting risk. params: none
 - `entity-bundle`: Get a full entity bundle by stable ID. params: stableId
 - `render-screenshot`: Capture a screenshot of the full world viewport. params: none
 - `viewport-camera`: Current viewport camera pose and framing direction. params: none

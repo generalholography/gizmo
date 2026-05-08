@@ -102,6 +102,13 @@ export const ENGINE_AUTOMATION_RESOURCE_DEFINITIONS: AutomationResourceDefinitio
     aliases: ['full-world-state'],
   },
   {
+    kind: 'static',
+    name: 'scene-evaluation',
+    description: 'Deterministic scene validation and evaluation report for loadability, inventory, bounds, intersections, and coplanar z-fighting risk.',
+    mimeType: 'application/json',
+    aliases: ['scene-evaluation'],
+  },
+  {
     kind: 'template',
     name: 'entity-bundle',
     description: 'Get a full entity bundle by stable ID.',

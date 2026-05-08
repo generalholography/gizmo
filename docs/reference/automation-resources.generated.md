@@ -16,6 +16,7 @@ Automation resources are exposed through `@gizmo3d/engine/automation`, `gizmo re
 - [`metadata`](#metadata)
 - [`achievements`](#achievements)
 - [`full-world-state`](#full-world-state)
+- [`scene-evaluation`](#scene-evaluation)
 - [`entity-bundle`](#entity-bundle)
 - [`render-screenshot`](#render-screenshot)
 - [`viewport-camera`](#viewport-camera)
@@ -172,6 +173,20 @@ MIME type: `application/json`
 MCP URI: `engine://world/full-state`
 
 Aliases: `full-world-state`
+
+No parameters.
+
+## scene-evaluation
+
+Deterministic scene validation and evaluation report for loadability, inventory, bounds, intersections, and coplanar z-fighting risk.
+
+Kind: `static`
+
+MIME type: `application/json`
+
+MCP URI: not mapped
+
+Aliases: `scene-evaluation`
 
 No parameters.
 

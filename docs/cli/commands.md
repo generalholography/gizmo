@@ -18,6 +18,7 @@ gizmo apply      Apply a complete world definition
 gizmo resource   Read one automation resource
 gizmo camera     Inspect or control the viewport camera
 gizmo snapshot   Capture a render screenshot
+gizmo eval       Validate and evaluate a scene
 gizmo docs       Print CLI/agent reference docs
 gizmo stop       Stop the active live session server
 gizmo commands   List automation commands
@@ -87,6 +88,43 @@ gizmo resource entity-bundle --stable-id 12
 Generated reference:
 
 - [Automation resources](../reference/automation-resources.generated.md)
+
+## Scene Evaluation
+
+`gizmo eval` runs deterministic local validation checks against a world file or
+live session. It is designed for agent repair loops and CI gates: the report is
+diagnostic JSON by default, with check-level scores, metrics, and findings tied
+back to stable IDs.
+
+```bash
+gizmo eval --world ./world.json
+gizmo eval ./world.json --checks basic,inventory,bounds,intersections,coplanar
+gizmo eval ./world.json --format markdown --output ./scene-report.md
+gizmo eval ./world.json --fail-on warning
+gizmo eval ./world.json --fail-on score --min-score 0.9
+```
+
+Available phase-1 and phase-2 checks:
+
+- `basic`: loadability, stable ID integrity, and transform sanity
+- `inventory`: entity, category, component, body, and collider inventory
+- `bounds`: world extents plus ground/support placement diagnostics
+- `intersections`: AABB overlap diagnostics with Rapier shape confirmation when
+  collider descriptors are available
+- `coplanar`: nearly coincident same-side bounds faces that may produce
+  z-fighting, such as duplicate floors, wall panels, or decals
+
+Common tuning flags:
+
+```bash
+gizmo eval ./world.json --overlap-tolerance 0.03
+gizmo eval ./world.json --coplanar-tolerance 0.005
+gizmo eval ./world.json --ground-y 0 --floor-tolerance 0.05 --floating-tolerance 0.05
+gizmo eval ./world.json --max-findings 100
+```
+
+`--fail-on error`, `--fail-on warning`, and `--fail-on score --min-score <n>`
+return a non-zero exit code when the selected threshold is crossed.
 
 ## Installed CLI Docs
 

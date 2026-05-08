@@ -680,8 +680,14 @@ export async function startLiveSessionServer(options: LiveSessionServerOptions):
         }
 
         const params: Record<string, any> = {};
-        const stableId = url.searchParams.get('stableId');
-        if (stableId !== null) params.stableId = Number(stableId);
+        for (const [key, value] of url.searchParams.entries()) {
+          if (key === 'name') continue;
+          try {
+            params[key] = JSON.parse(value);
+          } catch {
+            params[key] = value;
+          }
+        }
 
         writeJson(res, 200, await controller.handleResource(name, params));
         return;

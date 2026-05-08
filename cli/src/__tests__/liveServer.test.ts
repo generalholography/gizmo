@@ -47,7 +47,10 @@ describe('Live session server', () => {
             : { title: 'Live Test World', entityCount: 1 };
 
         if (request.type === 'get-resource') {
-          value = { title: 'Live Test World', entityCount: 0 };
+          value =
+            request.payload.name === 'scene-evaluation'
+              ? { echoedParams: request.payload.params }
+              : { title: 'Live Test World', entityCount: 0 };
         } else if (request.type === 'execute-command') {
           value = `Executed ${request.payload.name}`;
         } else if (request.type === 'serialize-world') {
@@ -86,6 +89,17 @@ describe('Live session server', () => {
     try {
       const summary = await controller.handleResource('world-state-summary', {});
       expect(summary.title).toBe('Live Test World');
+
+      const sceneEvaluation = await controller.handleResource('scene-evaluation', {
+        checks: ['intersections'],
+        maxFindingsPerCheck: 1,
+        groundY: -0.2,
+      });
+      expect(sceneEvaluation.echoedParams).toEqual({
+        checks: ['intersections'],
+        maxFindingsPerCheck: 1,
+        groundY: -0.2,
+      });
 
       const commandResult = await controller.handleCommand('add-entity', {
         archetypeOrDef: {

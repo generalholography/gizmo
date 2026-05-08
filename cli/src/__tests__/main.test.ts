@@ -609,6 +609,225 @@ describe('CLI main', () => {
     await expect(readCliSessionConfig(tempDir)).resolves.toEqual(worldConfig);
   }, 15000);
 
+  it('evaluates a clean headless scene with actionable phase 1 and 2 metrics', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-eval-clean-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    tempPaths.push(tempDir);
+
+    await fs.writeFile(
+      worldFilePath,
+      JSON.stringify(
+        createWorldDefinition({
+          title: 'Evaluation Clean Room',
+          entities: [
+            {
+              Info: { name: 'Floor' },
+              StableID: { id: 1 },
+              Transform: { x: 0, y: -0.05, z: 0 },
+              Body: {
+                type: 'composite',
+                params: {
+                  parts: [
+                    {
+                      geometry: { type: 'box', params: { lengthX: 8, lengthY: 0.1, lengthZ: 8 } },
+                    },
+                  ],
+                },
+              },
+              MotionSource: { type: 'static', params: {} },
+            },
+            {
+              Info: { name: 'Crate' },
+              StableID: { id: 2 },
+              Transform: { x: 0, y: 0.5, z: 0 },
+              Body: {
+                type: 'composite',
+                params: {
+                  parts: [
+                    {
+                      geometry: { type: 'box', params: { lengthX: 1, lengthY: 1, lengthZ: 1 } },
+                    },
+                  ],
+                },
+              },
+              MotionSource: { type: 'static', params: {} },
+            },
+          ],
+        }),
+      ),
+      'utf8',
+    );
+
+    const { io, stdout, stderr } = createIo();
+    const exitCode = await runCli(['eval', worldFilePath, '--checks', 'basic,inventory,bounds,intersections,coplanar'], io);
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toEqual([]);
+    const report = JSON.parse(stdout[0]);
+    expect(report.ok).toBe(true);
+    expect(report.world).toMatchObject({ title: 'Evaluation Clean Room', entityCount: 2, worldFilePath });
+    expect(report.checks.map((check: any) => check.id)).toEqual([
+      'basic.loadability',
+      'basic.stableIds',
+      'basic.transforms',
+      'inventory.summary',
+      'bounds.world',
+      'bounds.placement',
+      'geometry.intersections',
+      'geometry.coplanar',
+    ]);
+    expect(report.checks.find((check: any) => check.id === 'geometry.intersections').metrics.aabbOverlapPairs).toBe(0);
+    expect(report.checks.find((check: any) => check.id === 'geometry.coplanar').metrics.coplanarFacePairs).toBe(0);
+  });
+
+  it('reports intersections and supports fail-on thresholds', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-eval-intersections-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    tempPaths.push(tempDir);
+
+    const cubeBody = {
+      type: 'composite',
+      params: {
+        parts: [
+          {
+            geometry: { type: 'box', params: { lengthX: 2, lengthY: 2, lengthZ: 2 } },
+          },
+        ],
+      },
+    };
+
+    await fs.writeFile(
+      worldFilePath,
+      JSON.stringify(
+        createWorldDefinition({
+          title: 'Evaluation Intersections',
+          entities: [
+            {
+              Info: { name: 'Left Cube' },
+              StableID: { id: 10 },
+              Transform: { x: 0, y: 1, z: 0 },
+              Body: cubeBody,
+              MotionSource: { type: 'static', params: {} },
+            },
+            {
+              Info: { name: 'Right Cube' },
+              StableID: { id: 11 },
+              Transform: { x: 0.5, y: 1, z: 0 },
+              Body: cubeBody,
+              MotionSource: { type: 'static', params: {} },
+            },
+          ],
+        }),
+      ),
+      'utf8',
+    );
+
+    const { io, stdout, stderr } = createIo();
+    const exitCode = await runCli(['eval', worldFilePath, '--checks', 'intersections', '--fail-on', 'error'], io);
+
+    expect(exitCode).toBe(2);
+    expect(stderr).toEqual([]);
+    const report = JSON.parse(stdout[0]);
+    const intersections = report.checks.find((check: any) => check.id === 'geometry.intersections');
+    expect(report.ok).toBe(false);
+    expect(intersections.status).toBe('error');
+    expect(intersections.metrics.aabbOverlapPairs).toBe(1);
+    expect(intersections.findings[0]).toMatchObject({
+      severity: 'error',
+      stableIds: [10, 11],
+    });
+  });
+
+  it('reports coplanar surfaces that can z-fight', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-eval-coplanar-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    tempPaths.push(tempDir);
+
+    const panelBody = {
+      type: 'composite',
+      params: {
+        parts: [
+          {
+            geometry: { type: 'box', params: { lengthX: 4, lengthY: 0.1, lengthZ: 4 } },
+          },
+        ],
+      },
+    };
+
+    await fs.writeFile(
+      worldFilePath,
+      JSON.stringify(
+        createWorldDefinition({
+          title: 'Evaluation Coplanar Surfaces',
+          entities: [
+            {
+              Info: { name: 'Base Panel' },
+              StableID: { id: 20 },
+              Transform: { x: 0, y: -0.05, z: 0 },
+              Body: panelBody,
+              MotionSource: { type: 'static', params: {} },
+            },
+            {
+              Info: { name: 'Duplicate Top Panel' },
+              StableID: { id: 21 },
+              Transform: { x: 0.25, y: -0.05, z: 0.25 },
+              Body: panelBody,
+              MotionSource: { type: 'static', params: {} },
+            },
+            {
+              Info: { name: 'Supported Crate' },
+              StableID: { id: 22 },
+              Transform: { x: 0, y: 0.5, z: 0 },
+              Body: {
+                type: 'composite',
+                params: {
+                  parts: [
+                    {
+                      geometry: { type: 'box', params: { lengthX: 1, lengthY: 1, lengthZ: 1 } },
+                    },
+                  ],
+                },
+              },
+              MotionSource: { type: 'static', params: {} },
+            },
+          ],
+        }),
+      ),
+      'utf8',
+    );
+
+    const { io, stdout, stderr } = createIo();
+    const exitCode = await runCli(['eval', worldFilePath, '--checks', 'coplanar', '--coplanar-tolerance', '0.01'], io);
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toEqual([]);
+    const report = JSON.parse(stdout[0]);
+    expect(report.checks.map((check: any) => check.id)).toEqual(['geometry.coplanar']);
+    const coplanar = report.checks[0];
+    expect(coplanar.status).toBe('warning');
+    expect(coplanar.metrics.coplanarFacePairs).toBe(1);
+    expect(coplanar.findings[0]).toMatchObject({
+      severity: 'warning',
+      stableIds: [20, 21],
+    });
+  });
+
+  it('writes markdown eval reports to disk', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-eval-output-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    const reportPath = path.join(tempDir, 'report.md');
+    tempPaths.push(tempDir);
+    await fs.writeFile(worldFilePath, JSON.stringify(createWorldDefinition({ title: 'Markdown Eval' })), 'utf8');
+
+    const { io, stdout, stderr } = createIo();
+    const exitCode = await runCli(['eval', worldFilePath, '--format', 'markdown', '--output', reportPath], io);
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toEqual([]);
+    expect(JSON.parse(stdout[0])).toMatchObject({ ok: true, outputPath: reportPath });
+    await expect(fs.readFile(reportPath, 'utf8')).resolves.toContain('# Scene Evaluation: Markdown Eval');
+  });
+
   it('rejects removed pre-alpha command aliases', async () => {
     const devIo = createIo();
     expect(await runCli(['dev'], devIo.io)).toBe(1);

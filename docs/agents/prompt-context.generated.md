@@ -40,6 +40,7 @@ Use resources to inspect world state before making changes. Prefer stable IDs fo
 - metadata (engine://world/metadata): World metadata (title, description, dimensions). params: none
 - achievements (engine://world/achievements): List of all achievements. params: none
 - full-world-state (engine://world/full-state): Complete serialized world state. params: none
+- scene-evaluation: Deterministic scene validation and evaluation report for loadability, inventory, bounds, intersections, and coplanar z-fighting risk. params: none
 - entity-bundle (engine://entities/{stableId}): Get a full entity bundle by stable ID. params: stableId
 - render-screenshot (engine://render/screenshot): Capture a screenshot of the full world viewport. params: none
 - viewport-camera (engine://viewport/camera): Current viewport camera pose and framing direction. params: none

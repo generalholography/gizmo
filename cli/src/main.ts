@@ -8,6 +8,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import {
   HeadlessWorldSession,
+  evaluateScene,
   listAutomationCommands,
   listAutomationResourceDefinitions,
   type AutomationSession,
@@ -82,6 +83,7 @@ function usage(): string {
     '  resource   Read one engine resource',
     '  camera     Inspect or control the active viewport camera',
     '  snapshot   Capture a render screenshot resource',
+    '  eval       Validate and evaluate a scene',
     '  docs       Print agent-readable CLI, command, resource, component, or module docs',
     '  stop       Stop the active live session server',
     '  clean      Remove stale gizmo run artifacts and legacy session files',
@@ -110,6 +112,7 @@ function usage(): string {
     '  gizmo camera get',
     '  gizmo camera set --position \'{"x":0,"y":8,"z":18}\' --look-at \'{"x":0,"y":4,"z":0}\'',
     '  gizmo camera frame-entity 12',
+    '  gizmo eval --checks basic,inventory,bounds,intersections,coplanar',
     '  gizmo serve',
     '  gizmo stop',
     '  gizmo call add-entity --dry-run --params \'{"archetypeOrDef":"cube"}\'',
@@ -232,6 +235,35 @@ function commandUsage(command: string): string {
       '  --output <path>  Explicit output path',
       '  --server <url>   Live session server URL',
       '  --token <value>  Live session token',
+    ],
+    eval: [
+      'Usage: gizmo eval [world.json] [options]',
+      '',
+      'Validate and evaluate a scene with deterministic local checks.',
+      '',
+      'Checks:',
+      '  basic           Loadability, StableID integrity, and transform sanity',
+      '  inventory       Entity/category/component inventory',
+      '  bounds          World bounds and ground/support placement diagnostics',
+      '  intersections   Object overlap and collider intersection diagnostics',
+      '  coplanar        Nearly coincident same-side faces that may z-fight',
+      '',
+      'Options:',
+      '  --checks <list>                  Comma-separated checks; defaults to basic,inventory,bounds,intersections,coplanar',
+      '  --profile <name>                 Evaluation profile label; defaults to agent',
+      '  --format <json|markdown>         Output format; defaults to json',
+      '  --output <path>                  Write the report to a file',
+      '  --fail-on <error|warning|score>  Exit non-zero when the threshold is met',
+      '  --min-score <number>             Minimum score for --fail-on score',
+      '  --max-findings <number>          Maximum findings returned per check',
+      '  --overlap-tolerance <number>     Ignore AABB contacts shallower than this distance',
+      '  --coplanar-tolerance <number>    Face-plane tolerance for possible z-fighting',
+      '  --ground-y <number>              Ground plane Y used for placement checks',
+      '  --floor-tolerance <number>       Allowed below-ground tolerance',
+      '  --floating-tolerance <number>    Allowed unsupported height above ground',
+      '  --world <path>                   Local world file path',
+      '  --server <url>                   Live session server URL',
+      '  --token <value>                  Live session token',
     ],
     docs: [
       'Usage: gizmo docs [topic] [name] [options]',
@@ -593,7 +625,7 @@ function renderCliDocs(): string {
     '2. `GIZMO_WORLD` for headless world-file work.',
     '3. `.gizmo/session.json` in the current workspace.',
     '',
-    'Core commands: `init`, `use`, `start`, `mcp`, `mcp-config`, `call`, `batch`, `apply`, `resource`, `camera`, `snapshot`, `docs`, `skills`, `commands`, `resources`, `session`, `stop`, `clean`, `version`.',
+    'Core commands: `init`, `use`, `start`, `mcp`, `mcp-config`, `call`, `batch`, `apply`, `resource`, `camera`, `snapshot`, `eval`, `docs`, `skills`, `commands`, `resources`, `session`, `stop`, `clean`, `version`.',
   ].join('\n');
 }
 
@@ -1024,6 +1056,145 @@ async function handleResource(
   }
 }
 
+function parseCommaList(value: string | undefined): string[] | undefined {
+  if (!value) return undefined;
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function renderEvalMarkdown(report: any): string {
+  const lines = [
+    `# Scene Evaluation: ${report.world?.title ?? 'Untitled World'}`,
+    '',
+    `- Status: ${report.ok ? 'pass' : 'fail'}`,
+    `- Score: ${report.score}`,
+    `- Entities: ${report.world?.entityCount ?? 0}`,
+    `- Errors: ${report.summary?.errors ?? 0}`,
+    `- Warnings: ${report.summary?.warnings ?? 0}`,
+    `- Info: ${report.summary?.info ?? 0}`,
+    '',
+    '## Checks',
+    '',
+  ];
+
+  for (const check of report.checks ?? []) {
+    lines.push(`### ${check.label}`);
+    lines.push('');
+    lines.push(`- ID: \`${check.id}\``);
+    lines.push(`- Status: ${check.status}`);
+    lines.push(`- Score: ${check.score}`);
+    if (check.metrics && Object.keys(check.metrics).length > 0) {
+      lines.push(`- Metrics: \`${JSON.stringify(check.metrics)}\``);
+    }
+    if (check.findings?.length) {
+      lines.push('');
+      for (const finding of check.findings) {
+        const stableIds = finding.stableIds?.length ? ` (stableIds: ${finding.stableIds.join(', ')})` : '';
+        lines.push(`- ${finding.severity}: ${finding.message}${stableIds}`);
+      }
+    }
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+function shouldEvalFail(report: any, failOn: string | undefined, minScore: number | undefined): boolean {
+  switch (failOn) {
+    case undefined:
+      return false;
+    case 'error':
+      return (report.summary?.errors ?? 0) > 0;
+    case 'warning':
+      return (report.summary?.errors ?? 0) > 0 || (report.summary?.warnings ?? 0) > 0;
+    case 'score': {
+      const threshold = minScore ?? 1;
+      return (report.score ?? 0) < threshold;
+    }
+    default:
+      throw new Error("eval --fail-on must be one of 'error', 'warning', or 'score'.");
+  }
+}
+
+async function handleEval(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<number> {
+  const cwd = runtime.cwd ?? process.cwd();
+  const target = await resolveCliTarget(
+    {
+      serverUrl: getStringFlag(parsed, 'server'),
+      token: getStringFlag(parsed, 'token'),
+      worldFilePath: getPositionalOrFlag(parsed, 0, 'world'),
+    },
+    cwd,
+    runtime.env,
+  );
+
+  const checks = parseCommaList(getStringFlag(parsed, 'checks'));
+  const maxFindingsPerCheck = parseOptionalNumber(getStringFlag(parsed, 'max-findings'), 'max-findings');
+  const overlapTolerance = parseOptionalNumber(getStringFlag(parsed, 'overlap-tolerance'), 'overlap-tolerance');
+  const coplanarTolerance = parseOptionalNumber(getStringFlag(parsed, 'coplanar-tolerance'), 'coplanar-tolerance');
+  const groundY = parseOptionalNumber(getStringFlag(parsed, 'ground-y'), 'ground-y');
+  const floorTolerance = parseOptionalNumber(getStringFlag(parsed, 'floor-tolerance'), 'floor-tolerance');
+  const floatingTolerance = parseOptionalNumber(getStringFlag(parsed, 'floating-tolerance'), 'floating-tolerance');
+  const minScore = parseOptionalNumber(getStringFlag(parsed, 'min-score'), 'min-score');
+  const format = getStringFlag(parsed, 'format') ?? 'json';
+  if (format !== 'json' && format !== 'markdown') {
+    throw new Error("eval --format must be either 'json' or 'markdown'.");
+  }
+
+  let report: any;
+  const evalOptions = {
+    checks,
+    profile: getStringFlag(parsed, 'profile') ?? 'agent',
+    maxFindingsPerCheck,
+    overlapTolerance,
+    coplanarTolerance,
+    groundY,
+    floorTolerance,
+    floatingTolerance,
+  };
+  if (target.mode === 'live') {
+    const session = await openAutomationSession(target, false);
+    try {
+      report = await session.readResource('scene-evaluation', evalOptions);
+    } finally {
+      await session.close?.();
+    }
+  } else {
+    const session = await HeadlessWorldSession.open({
+      worldFilePath: target.worldFilePath,
+      autoSave: false,
+    });
+    try {
+      report = evaluateScene(session.getContext(), {
+        ...evalOptions,
+        worldFilePath: target.worldFilePath,
+      });
+    } finally {
+      await session.close?.();
+    }
+  }
+
+  const rendered = format === 'markdown' ? renderEvalMarkdown(report) : JSON.stringify(report, null, 2);
+  const outputPath = getStringFlag(parsed, 'output');
+  if (outputPath) {
+    const resolvedOutputPath = path.resolve(cwd, outputPath);
+    await fs.mkdir(path.dirname(resolvedOutputPath), { recursive: true });
+    await fs.writeFile(resolvedOutputPath, rendered, 'utf8');
+    printJson(io, {
+      ok: report.ok,
+      score: report.score,
+      summary: report.summary,
+      outputPath: resolvedOutputPath,
+    });
+  } else {
+    io.stdout(rendered);
+  }
+
+  return shouldEvalFail(report, getStringFlag(parsed, 'fail-on'), minScore) ? 2 : 0;
+}
+
 async function handleCamera(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
   const action = parsed.positionals[0] ?? 'get';
   const cwd = runtime.cwd ?? process.cwd();
@@ -1439,6 +1610,8 @@ export async function runCli(argv: string[], io = defaultIo(), runtime: CliRunti
       case 'snapshot':
         await handleResource(parsed, io, runtime, 'render-screenshot');
         return 0;
+      case 'eval':
+        return await handleEval(parsed, io, runtime);
       case 'docs':
         io.stdout(await renderDocs(parsed, runtime));
         return 0;

@@ -110,6 +110,16 @@
       "mcpUri": "engine://world/full-state"
     },
     {
+      "kind": "static",
+      "name": "scene-evaluation",
+      "description": "Deterministic scene validation and evaluation report for loadability, inventory, bounds, intersections, and coplanar z-fighting risk.",
+      "mimeType": "application/json",
+      "aliases": [
+        "scene-evaluation"
+      ],
+      "mcpUri": null
+    },
+    {
       "kind": "template",
       "name": "entity-bundle",
       "description": "Get a full entity bundle by stable ID.",

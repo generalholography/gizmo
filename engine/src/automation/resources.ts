@@ -17,6 +17,7 @@ import {
   ENGINE_AUTOMATION_RESOURCE_DEFINITIONS,
   type AutomationResourceDefinition,
 } from './resourceCatalog';
+import { evaluateScene } from './eval';
 
 export interface AutomationResource {
   name: string;
@@ -244,6 +245,12 @@ export const worldStateResources: AutomationResource[] = [
     description: 'Complete serialized world state (use sparingly, can be large)',
     contentType: 'json',
     handler: (ctx) => serializeWorld(ctx, { includeEntities: true, includeRuntime: true }),
+  },
+  {
+    name: 'scene-evaluation',
+    description: 'Deterministic scene validation and evaluation report for loadability, inventory, bounds, intersections, and coplanar z-fighting risk.',
+    contentType: 'json',
+    handler: (ctx, params) => evaluateScene(ctx, params),
   },
   {
     name: 'render-screenshot',
