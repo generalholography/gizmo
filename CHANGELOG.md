@@ -6,6 +6,22 @@ Gizmo follows semantic versioning for published packages under the `@gizmo3d`
 scope. Package-specific changes may also be called out in the relevant package
 README or release notes.
 
+## 0.3.4
+
+### Added
+
+- `gizmo eval` for deterministic scene validation in headless and live sessions,
+  including loadability, inventory, world bounds, ground/support placement,
+  collider intersections, and coplanar z-fighting risk.
+- `scene-evaluation` automation resource for agent and MCP workflows that need
+  structured scene evaluation reports.
+
+### Changed
+
+- Live resource requests now preserve structured query parameters, allowing
+  `gizmo eval` check selection and tolerance flags to work consistently against
+  browser-attached live sessions.
+
 ## 0.3.3
 
 ### Added
@@ -14,11 +30,6 @@ README or release notes.
   session, giving agents a reliable bulk scene path.
 - `gizmo stop` lifecycle support for shutting down active live servers and
   clearing local session/run state.
-- `gizmo eval` for deterministic scene validation in headless and live sessions,
-  including loadability, inventory, world bounds, ground/support placement,
-  collider intersections, and coplanar z-fighting risk.
-- `scene-evaluation` automation resource for agent and MCP workflows that need
-  structured scene evaluation reports.
 
 ### Changed
 
@@ -29,9 +40,6 @@ README or release notes.
   default port is already occupied and no explicit `--port` was provided.
 - The Gizmo Agent Skill now gives stricter low-freedom instructions for visual
   creation, no-browser fallback, bulk scene application, validation, and cleanup.
-- Live resource requests now preserve structured query parameters, allowing
-  `gizmo eval` check selection and tolerance flags to work consistently against
-  browser-attached live sessions.
 
 ## 0.3.2
 

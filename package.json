@@ -1,6 +1,6 @@
 {
   "name": "gizmo",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Open-source toolkit for browser 3D worlds, local automation, and MCP-compatible agent workflows.",
   "license": "Apache-2.0",
   "private": true,
@@ -41,7 +41,7 @@
     "pack:dry-run": "npm pack --dry-run --workspace=engine && npm pack --dry-run --workspace=mcp && npm run build --workspace=cli && npm pack --dry-run --workspace=cli"
   },
   "devDependencies": {
-    "@gizmo3d/cli": "^0.3.3",
+    "@gizmo3d/cli": "^0.3.4",
     "vite": "^6.4.2"
   }
 }
