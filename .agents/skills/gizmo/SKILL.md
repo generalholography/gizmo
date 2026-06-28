@@ -96,6 +96,15 @@ Fast build options:
 
 - For live sessions with an attached browser, `gizmo apply ./scene.json` updates
   the visible world.
+- For procedural worlds in trusted workspaces, prefer the dedicated
+  `gizmo-worldscript` skill and run:
+
+  ```bash
+  gizmo run-world-script ./world.world.js --world ./world.json --validate
+  ```
+
+  Expose script execution through MCP/live only when the user explicitly opts in
+  with `--allow-world-scripts`.
 - For incremental edits, use `gizmo call <command> --params '<json>'`.
 - For a logical group of incremental edits, use `gizmo batch @calls.json`.
 - Avoid using `reinitialize-world` directly unless `gizmo docs command
@@ -201,6 +210,7 @@ common shapes, then use `gizmo docs ...` for exact installed-version detail.
 - `add-body-part(stableId, archetype, localPosition)`: Append a new body part to a composite body. (changes state; persists world)
 - `set-body-part-transform(stableId, path, transform)`: Set a body part transform. (changes state; persists world)
 - `reinitialize-world(definition)`: Reinitialize the world (respawn entities). (changes state; persists world)
+- `run-world-script(source?, path?, validate?)`: Execute a trusted JavaScript world script and replace the current world. (changes state; persists world)
 - `modify-world-settings(settings)`: Update world-level settings. (changes state; persists world)
 - `upsert-module-type(moduleName, typeName, factorySource, description?, parameterSchema?)`: Register or replace a persisted runtime module type backed by factory source. (changes state; persists world)
 - `remove-module-type(moduleName, typeName)`: Remove a persisted runtime module type. (changes state; persists world)

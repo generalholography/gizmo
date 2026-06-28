@@ -111,4 +111,82 @@ describe('HeadlessWorldSession world-script loading', () => {
       await reloaded.close();
     }
   });
+
+  it('gates inline world-script execution behind explicit session permission', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-world-script-gated-'));
+    const worldPath = path.join(tempDir, 'world.json');
+    tempPaths.push(tempDir);
+
+    const source = `
+      export default {
+        setupScene(api) {
+          api.initialize({
+            title: 'Script Built World',
+            entities: [
+              { Info: { name: 'Script Plaza' }, Transform: { x: 0, y: 0, z: 0 } }
+            ]
+          }, { merge: false, spawnEntities: true });
+        }
+      };
+    `;
+
+    const blocked = await HeadlessWorldSession.open({
+      worldFilePath: worldPath,
+      autoSave: false,
+    });
+    try {
+      await expect(blocked.callTool('run-world-script', { source })).rejects.toThrow(/explicit world-script permission/);
+    } finally {
+      await blocked.close();
+    }
+
+    const allowed = await HeadlessWorldSession.open({
+      worldFilePath: worldPath,
+      autoSave: true,
+      allowWorldScripts: true,
+    });
+    try {
+      const result = await allowed.callTool('run-world-script', { source, validate: true });
+      expect(result.changed).toBe(true);
+      expect(JSON.parse(result.text)).toMatchObject({
+        ok: true,
+        source: 'inline',
+        summary: { title: 'Script Built World', entityCount: 1 },
+      });
+
+      const saved = JSON.parse(await fs.readFile(worldPath, 'utf8'));
+      expect(saved.title).toBe('Script Built World');
+      const entities =
+        saved.dimensions?.flatMap((dimension: any) => dimension.chunks ?? [])
+          .flatMap((chunk: any) => chunk.entities ?? []) ?? [];
+      expect(entities.some((entity: any) => entity?.Info?.name === 'Script Plaza')).toBe(true);
+    } finally {
+      await allowed.close();
+    }
+  });
+
+  it('rejects world-script execution inside automation batches', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-world-script-batch-'));
+    const worldPath = path.join(tempDir, 'world.json');
+    tempPaths.push(tempDir);
+
+    const session = await HeadlessWorldSession.open({
+      worldFilePath: worldPath,
+      autoSave: false,
+      allowWorldScripts: true,
+    });
+
+    try {
+      await expect(session.callBatch([
+        {
+          name: 'run-world-script',
+          params: {
+            source: 'export default { setupScene() {} };',
+          },
+        },
+      ])).rejects.toThrow(/cannot be used in a batch/);
+    } finally {
+      await session.close();
+    }
+  });
 });

@@ -117,7 +117,7 @@
       "aliases": [
         "scene-evaluation"
       ],
-      "mcpUri": null
+      "mcpUri": "engine://world/scene-evaluation"
     },
     {
       "kind": "template",

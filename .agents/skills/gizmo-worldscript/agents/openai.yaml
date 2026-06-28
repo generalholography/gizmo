@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gizmo WorldScript"
+  short_description: "Author procedural Gizmo world scripts"
+  default_prompt: "Use $gizmo-worldscript to create a polished procedural Gizmo world script."

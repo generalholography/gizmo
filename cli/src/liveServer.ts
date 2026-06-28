@@ -46,6 +46,7 @@ export interface LiveSessionServerOptions {
   port: number;
   token?: string;
   allowRemote?: boolean;
+  allowWorldScripts?: boolean;
   artifactsDir?: string;
 }
 
@@ -354,6 +355,30 @@ function loadedWorldFormatForWrite(value: unknown): WorldFileFormat {
   return value === 'world-script' ? 'world-script' : 'json';
 }
 
+function listLiveAutomationCommands(allowWorldScripts: boolean) {
+  return listAutomationCommands().filter((command) => allowWorldScripts || command.name !== 'run-world-script');
+}
+
+async function resolveLiveCommandParams(
+  name: string,
+  params: Record<string, any>,
+  allowWorldScripts: boolean,
+): Promise<Record<string, any>> {
+  if (name !== 'run-world-script') {
+    return params;
+  }
+  if (!allowWorldScripts) {
+    throw new Error('run-world-script requires starting the live session with --allow-world-scripts.');
+  }
+  if (typeof params.path === 'string' && params.path.trim() && typeof params.source !== 'string') {
+    return {
+      ...params,
+      source: await fs.readFile(path.resolve(params.path), 'utf8'),
+    };
+  }
+  return params;
+}
+
 async function maybeTransformWorldScript(vite: ViteDevServer, worldFilePath: string): Promise<string> {
   const moduleUrl = normalizeFsImportPath(worldFilePath);
   const transformed = await vite.transformRequest(moduleUrl);
@@ -362,6 +387,7 @@ async function maybeTransformWorldScript(vite: ViteDevServer, worldFilePath: str
 
 export async function createLiveSessionController(options: {
   worldFilePath: string;
+  allowWorldScripts?: boolean;
   transformWorldScript?: (worldFilePath: string) => Promise<string>;
 }): Promise<LiveSessionController> {
   const worldFilePath = path.resolve(options.worldFilePath);
@@ -400,6 +426,7 @@ export async function createLiveSessionController(options: {
         browserUrl: baseServerUrl ? `${baseServerUrl}/live.html` : null,
         worldFilePath,
         worldFormat: loadedWorld.format as WorldFileFormat,
+        allowWorldScripts: options.allowWorldScripts === true,
         lastSavedAt,
         ...bridge.getState(),
       };
@@ -408,6 +435,7 @@ export async function createLiveSessionController(options: {
       worldFilePath,
       worldFormat: loadedWorld.format,
       serverUrl: `http://${connection.host}:${connection.port}`,
+      allowWorldScripts: options.allowWorldScripts === true,
     }),
     getWorldSource: async () => {
       const currentWorld = await loadWorldFile(worldFilePath);
@@ -435,9 +463,10 @@ export async function createLiveSessionController(options: {
       bridge.respond(payload);
     },
     handleCommand: async (name, params) => {
+      const resolvedParams = await resolveLiveCommandParams(name, params, options.allowWorldScripts === true);
       const message = await bridge.enqueue({
         type: 'execute-command',
-        payload: { name, params },
+        payload: { name, params: resolvedParams },
       });
 
       if (persistsWorldForAutomationCommand(name)) {
@@ -451,6 +480,9 @@ export async function createLiveSessionController(options: {
       };
     },
     handleBatch: async (calls, description) => {
+      if (calls.some((call) => call.name === 'run-world-script')) {
+        throw new Error('run-world-script cannot be used in a batch.');
+      }
       const results = await bridge.enqueue({
         type: 'execute-batch',
         payload: { calls, description },
@@ -522,6 +554,7 @@ export async function startLiveSessionServer(options: LiveSessionServerOptions):
   });
   const controller = await createLiveSessionController({
     worldFilePath,
+    allowWorldScripts: options.allowWorldScripts === true,
     transformWorldScript: async (entryPath) => await maybeTransformWorldScript(vite, entryPath),
   });
   let closing = false;
@@ -663,7 +696,7 @@ export async function startLiveSessionServer(options: LiveSessionServerOptions):
       }
 
       if (url.pathname === '/api/commands' && req.method === 'GET') {
-        writeJson(res, 200, listAutomationCommands());
+        writeJson(res, 200, listLiveAutomationCommands(options.allowWorldScripts === true));
         return;
       }
 

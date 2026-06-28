@@ -1,32 +1,25 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import type { ECSContext } from '../core/ecs';
-import { clearECS, getModule, getResource, setResource } from '../core/ecs';
+import { clearECS, getResource, setResource } from '../core/ecs';
 import { createWorldDefinition, initialize } from '../core/initializeWorld';
 import { serializeWorld } from '../core/serializeWorld';
 import { loadWorldFromJSON } from '../core/worldPersistence';
-import { registerArchetype } from '../modules/archetype';
-import { restoreDeferredEntityReferences, spawn } from '../core/spawn';
 import { executeAutomationBatch, executeAutomationCommand, type AutomationCommandCall } from './commands';
 import { readAutomationResource } from './resources';
 import { createHeadlessECSContext } from './headlessContext';
-import {
-  registerRuntimeModuleType,
-  unregisterRuntimeModuleType,
-  upsertRuntimeModuleInstance,
-  removeRuntimeModuleInstance,
-} from '../core/runtimeModuleTypes';
 import {
   isMutatingAutomationCommand,
   persistsWorldForAutomationCommand,
   type AutomationBatchResult,
   type AutomationSession,
 } from './session';
+import { runWorldScriptInContext } from './worldScript';
 
 export interface HeadlessWorldSessionOptions {
   worldFilePath: string;
   autoSave?: boolean;
+  allowWorldScripts?: boolean;
 }
 
 export interface HeadlessWorldSessionInfo {
@@ -35,6 +28,7 @@ export interface HeadlessWorldSessionInfo {
   worldFilePath: string;
   worldFormat: 'json' | 'world-script';
   autoSave: boolean;
+  allowWorldScripts: boolean;
   dirty: boolean;
   existsOnDisk: boolean;
   worldTitle?: string;
@@ -45,6 +39,7 @@ export interface HeadlessWorldSessionInfo {
 export class HeadlessWorldSession implements AutomationSession {
   readonly worldFilePath: string;
   readonly autoSave: boolean;
+  readonly allowWorldScripts: boolean;
 
   private ctx!: ECSContext;
   private dirty = false;
@@ -55,6 +50,7 @@ export class HeadlessWorldSession implements AutomationSession {
   private constructor(options: HeadlessWorldSessionOptions) {
     this.worldFilePath = path.resolve(options.worldFilePath);
     this.autoSave = options.autoSave !== false;
+    this.allowWorldScripts = options.allowWorldScripts === true;
   }
 
   static async open(options: HeadlessWorldSessionOptions): Promise<HeadlessWorldSession> {
@@ -75,6 +71,7 @@ export class HeadlessWorldSession implements AutomationSession {
       worldFilePath: this.worldFilePath,
       worldFormat: this.worldFormat,
       autoSave: this.autoSave,
+      allowWorldScripts: this.allowWorldScripts,
       dirty: this.dirty,
       existsOnDisk: this.existsOnDisk,
       worldTitle: summary?.title,
@@ -174,6 +171,10 @@ export class HeadlessWorldSession implements AutomationSession {
   }
 
   private updateSessionInfoResource(): void {
+    setResource(this.ctx, 'automationCapabilities', {
+      allowWorldScripts: this.allowWorldScripts,
+    });
+    setResource(this.ctx, 'runWorldScriptInContext', runWorldScriptInContext);
     setResource(this.ctx, 'automationSessionInfo', this.getInfo());
   }
 
@@ -205,52 +206,7 @@ export class HeadlessWorldSession implements AutomationSession {
   }
 
   private async loadWorldScriptModule(): Promise<void> {
-    const source = await fs.readFile(this.worldFilePath, 'utf8');
-    const imported = /\bimport\s+/.test(source)
-      ? await this.loadWorldScriptFromNativeModule()
-      : this.loadWorldScriptInline(source);
-    const worldScript = imported?.default;
-
-    if (!worldScript || typeof worldScript.setupScene !== 'function') {
-      throw new Error(`World script at ${this.worldFilePath} must default-export an object with setupScene(api).`);
-    }
-
-    const api = {
-      ecsWorld: this.ctx,
-      initialize: (definition: any, options?: Record<string, any>) => initialize(this.ctx, definition, options),
-      spawn: (ref: any, overrides?: Record<string, any>) => spawn(this.ctx, ref, overrides),
-      getModule: (name: string) => getModule(this.ctx, name),
-      registerArchetype: (name: string, definition: any, builtIn = false) =>
-        registerArchetype(this.ctx, name, definition, builtIn),
-      registerRuntimeModuleType: (definition: any) =>
-        registerRuntimeModuleType(this.ctx, definition, { persist: true }),
-      unregisterRuntimeModuleType: (moduleName: string, typeName: string) =>
-        unregisterRuntimeModuleType(this.ctx, moduleName, typeName),
-      registerRuntimeModuleInstance: (moduleName: string, instanceName: string, definition: any) =>
-        upsertRuntimeModuleInstance(this.ctx, moduleName, instanceName, definition),
-      unregisterRuntimeModuleInstance: (moduleName: string, instanceName: string) =>
-        removeRuntimeModuleInstance(this.ctx, moduleName, instanceName),
-    };
-
-    await Promise.resolve(worldScript.setupScene(api));
-    restoreDeferredEntityReferences(this.ctx);
-  }
-
-  private async loadWorldScriptFromNativeModule(): Promise<any> {
-    const moduleUrl = `${pathToFileURL(this.worldFilePath).href}?mtime=${Date.now()}`;
-    return import(/* @vite-ignore */ moduleUrl);
-  }
-
-  private loadWorldScriptInline(source: string): any {
-    if (!/\bexport\s+default\b/.test(source)) {
-      throw new Error(
-        `World script inline fallback requires an 'export default' object. Failed to load ${this.worldFilePath}.`,
-      );
-    }
-
-    const transformed = `${source.replace(/\bexport\s+default\b/, 'const __default__ =')}\nreturn { default: __default__ };`;
-    const factory = new Function(transformed);
-    return factory();
+    await runWorldScriptInContext(this.ctx, { path: this.worldFilePath });
   }
 
   private async writeTextFileAtomically(contents: string): Promise<void> {

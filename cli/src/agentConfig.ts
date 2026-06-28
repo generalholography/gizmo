@@ -3,6 +3,7 @@ export interface McpConfigTarget {
   serverUrl?: string;
   token?: string;
   serverName?: string;
+  allowWorldScripts?: boolean;
 }
 
 export function buildMcpConfig(target: McpConfigTarget = {}): Record<string, any> {
@@ -16,6 +17,9 @@ export function buildMcpConfig(target: McpConfigTarget = {}): Record<string, any
     }
   } else if (target.worldFilePath?.trim()) {
     args.push('--world', target.worldFilePath);
+  }
+  if (target.allowWorldScripts && !target.serverUrl?.trim()) {
+    args.push('--allow-world-scripts');
   }
 
   return {

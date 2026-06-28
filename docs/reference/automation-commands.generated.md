@@ -17,6 +17,7 @@ Automation commands are exposed through `@gizmo3d/engine/automation`, `gizmo cal
 - [`add-body-part`](#add-body-part)
 - [`set-body-part-transform`](#set-body-part-transform)
 - [`reinitialize-world`](#reinitialize-world)
+- [`run-world-script`](#run-world-script)
 - [`modify-world-settings`](#modify-world-settings)
 - [`upsert-module-type`](#upsert-module-type)
 - [`remove-module-type`](#remove-module-type)
@@ -159,6 +160,18 @@ Reinitialize the world (respawn entities).
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `definition` | `object` | yes | Full world definition to load. |
+
+## run-world-script
+
+Execute a trusted JavaScript world script and replace the current world.
+
+`changesState` `persistsWorld`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `source` | `string` | no | Inline JavaScript/MJS world script source. Requires explicit world-script permission. |
+| `path` | `string` | no | Path to a trusted JavaScript/MJS world script file. Requires explicit world-script permission. |
+| `validate` | `boolean` | no | When true, include a scene-evaluation report after the script runs. |
 
 ## modify-world-settings
 

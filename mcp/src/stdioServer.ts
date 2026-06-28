@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createAutomationMcpServer } from './mcpServerFactory';
+import { buildWorldEditorPrompt } from './worldEditorPrompt';
 import type { EngineMcpServerOptions } from './parseArgs';
 
 const ENGINE_SERVER_NAME = 'engine';
@@ -32,6 +33,7 @@ export async function createEngineMcpServer(options: EngineMcpServerOptions) {
   const session = await HeadlessWorldSession.open({
     worldFilePath: resolvedWorldPath,
     autoSave: options.autoSave,
+    allowWorldScripts: options.allowWorldScripts,
   });
 
   const server = await createAutomationMcpServer(session, {
@@ -40,11 +42,7 @@ export async function createEngineMcpServer(options: EngineMcpServerOptions) {
       'Use resources to inspect the current world definition and tools to mutate it. ' +
       'Mutating tools persist changes to the backing world file automatically unless the server is started with --no-auto-save.',
     promptDescription: 'Guidance for editing the current world through the engine MCP server.',
-    buildPromptText: (_info, goal) =>
-      `Inspect engine://session/info and engine://world/summary before making edits. ` +
-      `Use engine://entities and engine://entities/{stableId} for precise targeting. ` +
-      `All mutating tools auto-save by default.` +
-      (goal ? ` Goal: ${goal}` : ''),
+    buildPromptText: buildWorldEditorPrompt,
   });
 
   return { server, session };

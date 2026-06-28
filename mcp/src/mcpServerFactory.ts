@@ -76,6 +76,13 @@ function describeTemplateResource(resourceName: string, stableId: number): strin
   return `Entity bundle for stable ID ${stableId}`;
 }
 
+function commandAllowedForSession(commandName: string, info: Record<string, any>): boolean {
+  if (commandName === 'run-world-script') {
+    return info.allowWorldScripts === true;
+  }
+  return true;
+}
+
 export async function createAutomationMcpServer(
   session: AutomationSession,
   options: AutomationMcpServerOptions,
@@ -91,7 +98,7 @@ export async function createAutomationMcpServer(
     },
   );
 
-  for (const tool of ENGINE_AUTOMATION_COMMAND_DEFINITIONS) {
+  for (const tool of ENGINE_AUTOMATION_COMMAND_DEFINITIONS.filter((command) => commandAllowedForSession(command.name, info))) {
     server.registerTool(
       tool.name,
       {

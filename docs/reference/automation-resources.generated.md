@@ -184,7 +184,7 @@ Kind: `static`
 
 MIME type: `application/json`
 
-MCP URI: not mapped
+MCP URI: `engine://world/scene-evaluation`
 
 Aliases: `scene-evaluation`
 

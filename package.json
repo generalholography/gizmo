@@ -34,8 +34,8 @@
     "test": "npm run test --workspace=engine && npm run test --workspace=mcp && npm run test --workspace=cli",
     "docs:generate": "node scripts/generate-docs.mjs",
     "docs:check": "node scripts/generate-docs.mjs --check",
-    "skills:generate": "node scripts/generate-skill.mjs",
-    "skills:check": "node scripts/generate-skill.mjs --check && node scripts/validate-skills.mjs",
+    "skills:generate": "node scripts/generate-skill.mjs && node scripts/generate-worldscript-skill.mjs",
+    "skills:check": "node scripts/generate-skill.mjs --check && node scripts/generate-worldscript-skill.mjs --check && node scripts/validate-skills.mjs",
     "validate": "npm run docs:check && npm run skills:check && npm run validate --workspace=cli",
     "build:package": "npm run build:package --workspace=engine && npm run build --workspace=mcp && npm run build --workspace=cli",
     "pack:dry-run": "npm pack --dry-run --workspace=engine && npm pack --dry-run --workspace=mcp && npm run build --workspace=cli && npm pack --dry-run --workspace=cli"

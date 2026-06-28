@@ -80,6 +80,7 @@ function usage(): string {
     '  call       Execute one engine command against a world file or live server',
     '  batch      Execute a batch of engine commands',
     '  apply      Apply a complete world definition to the active target',
+    '  run-world-script Execute a trusted JavaScript world script against the active target',
     '  resource   Read one engine resource',
     '  camera     Inspect or control the active viewport camera',
     '  snapshot   Capture a render screenshot resource',
@@ -109,6 +110,7 @@ function usage(): string {
     '  gizmo resource world-state-summary',
     '  gizmo call add-entity --params \'{"archetypeOrDef":"cube"}\'',
     '  gizmo apply @world.json',
+    '  gizmo run-world-script ./scene.world.js --validate',
     '  gizmo camera get',
     '  gizmo camera set --position \'{"x":0,"y":8,"z":18}\' --look-at \'{"x":0,"y":4,"z":0}\'',
     '  gizmo camera frame-entity 12',
@@ -153,6 +155,7 @@ function commandUsage(command: string): string {
       '  --host <host>   Bind host; defaults to 127.0.0.1',
       '  --port <port>   Bind port; use 0 for an ephemeral port',
       '  --allow-remote  Permit non-loopback binding for trusted networks',
+      '  --allow-world-scripts Enable trusted world-script execution tools for this session',
       '',
       'If the default port is already in use and --port was not provided, Gizmo falls back to an ephemeral port.',
     ],
@@ -165,6 +168,7 @@ function commandUsage(command: string): string {
       '  --host <host>   Bind host; defaults to 127.0.0.1',
       '  --port <port>   Bind port; defaults to 4173',
       '  --allow-remote  Permit non-loopback binding for trusted networks',
+      '  --allow-world-scripts Enable trusted world-script execution tools for this session',
       '',
       'If the default port is already in use and --port was not provided, Gizmo falls back to an ephemeral port.',
     ],
@@ -179,6 +183,7 @@ function commandUsage(command: string): string {
       '  --server <url>         Live session server URL',
       '  --token <value>        Live session token',
       '  --dry-run              Validate against a world file without saving',
+      '  --allow-world-scripts  Enable trusted world-script execution for run-world-script',
     ],
     batch: [
       'Usage: gizmo batch <json|@file> [options]',
@@ -202,6 +207,23 @@ function commandUsage(command: string): string {
       '  --world <path>        Local world file path',
       '  --server <url>        Live session server URL',
       '  --token <value>       Live session token',
+    ],
+    'run-world-script': [
+      'Usage: gizmo run-world-script <world-script.js> [options]',
+      '',
+      'Execute a trusted JavaScript/MJS world script and replace the active world.',
+      '',
+      'Options:',
+      '  --path <path>     JavaScript/MJS world script file',
+      '  --source <text>   Inline script source, or @file.js',
+      '  --world <path>    Local world file path',
+      '  --server <url>    Live session server URL',
+      '  --token <value>   Live session token',
+      '  --dry-run         Execute against a headless temporary session without saving',
+      '  --validate        Include scene-evaluation after the script runs',
+      '  --no-auto-save    Run without persisting the backing world',
+      '',
+      'World scripts execute JavaScript. Only run trusted local scripts.',
     ],
     resource: [
       'Usage: gizmo resource <resource> [options]',
@@ -838,6 +860,7 @@ function getPositionalOrFlag(parsed: ParsedCliArgs, index: number, flagName: str
 async function openAutomationSession(
   target: Awaited<ReturnType<typeof resolveCliTarget>>,
   autoSave: boolean,
+  options: { allowWorldScripts?: boolean } = {},
 ): Promise<AutomationSession> {
   if (target.mode === 'live') {
     return new LiveAutomationSession(target.serverUrl, target.token);
@@ -846,6 +869,7 @@ async function openAutomationSession(
   return await HeadlessWorldSession.open({
     worldFilePath: target.worldFilePath,
     autoSave,
+    allowWorldScripts: options.allowWorldScripts === true,
   });
 }
 
@@ -890,7 +914,9 @@ async function handleCall(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime)
     throw new Error('call --dry-run is only supported for headless world-file targets.');
   }
 
-  const session = await openAutomationSession(target, !dryRun && !getBooleanFlag(parsed, 'no-auto-save'));
+  const session = await openAutomationSession(target, !dryRun && !getBooleanFlag(parsed, 'no-auto-save'), {
+    allowWorldScripts: getBooleanFlag(parsed, 'allow-world-scripts'),
+  });
 
   try {
     printJson(io, {
@@ -926,7 +952,9 @@ async function handleBatch(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime
     throw new Error('batch --dry-run is only supported for headless world-file targets.');
   }
 
-  const session = await openAutomationSession(target, !dryRun && !getBooleanFlag(parsed, 'no-auto-save'));
+  const session = await openAutomationSession(target, !dryRun && !getBooleanFlag(parsed, 'no-auto-save'), {
+    allowWorldScripts: getBooleanFlag(parsed, 'allow-world-scripts'),
+  });
 
   try {
     const batch = await session.callBatch(calls, description);
@@ -1004,6 +1032,69 @@ async function handleApply(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime
     browserReady: false,
     note: 'Updated the backing world file. Open or refresh the live browser to load the new world.',
   });
+}
+
+async function readWorldScriptSourceArg(value: string, cwd: string): Promise<string> {
+  if (value.startsWith('@')) {
+    return await fs.readFile(path.resolve(cwd, value.slice(1)), 'utf8');
+  }
+  return value;
+}
+
+async function handleRunWorldScript(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
+  const cwd = runtime.cwd ?? process.cwd();
+  const explicitSource = getStringFlag(parsed, 'source');
+  const scriptPath = getPositionalOrFlag(parsed, 0, 'path');
+  if (explicitSource && scriptPath) {
+    throw new Error('run-world-script accepts either --source or a script path, not both.');
+  }
+  if (!explicitSource && !scriptPath) {
+    throw new Error('run-world-script requires a script path or --source.');
+  }
+
+  const target = await resolveCliTarget(
+    {
+      serverUrl: getStringFlag(parsed, 'server'),
+      token: getStringFlag(parsed, 'token'),
+      worldFilePath: getStringFlag(parsed, 'world'),
+    },
+    cwd,
+    runtime.env,
+  );
+  const dryRun = getBooleanFlag(parsed, 'dry-run');
+  if (dryRun && target.mode === 'live') {
+    throw new Error('run-world-script --dry-run is only supported for headless world-file targets.');
+  }
+
+  const params: Record<string, any> = {
+    validate: getBooleanFlag(parsed, 'validate'),
+  };
+  if (explicitSource) {
+    params.source = await readWorldScriptSourceArg(explicitSource, cwd);
+  } else {
+    params.path = path.resolve(cwd, scriptPath as string);
+  }
+
+  const session = await openAutomationSession(target, !dryRun && !getBooleanFlag(parsed, 'no-auto-save'), {
+    allowWorldScripts: true,
+  });
+
+  try {
+    const result = await session.callTool('run-world-script', params);
+    let parsedText: any = null;
+    try {
+      parsedText = JSON.parse(result.text);
+    } catch {
+      parsedText = { message: result.text };
+    }
+    printJson(io, {
+      ...parsedText,
+      changed: result.changed,
+      ...(dryRun ? { dryRun: true, persisted: false } : { persisted: !getBooleanFlag(parsed, 'no-auto-save') }),
+    });
+  } finally {
+    await session.close?.();
+  }
 }
 
 async function handleResource(
@@ -1298,6 +1389,7 @@ async function startBrowserBackedSession(options: {
   const explicitPort = getStringFlag(parsed, 'port');
   const port = parseOptionalNumber(explicitPort, 'port') ?? 4173;
   const allowRemote = getBooleanFlag(parsed, 'allow-remote');
+  const allowWorldScripts = getBooleanFlag(parsed, 'allow-world-scripts');
   const run = await ensureCliRun({
     cwd,
     target: {
@@ -1315,6 +1407,7 @@ async function startBrowserBackedSession(options: {
       host,
       port,
       allowRemote,
+      allowWorldScripts,
       artifactsDir: run.artifactsDir,
     });
   } catch (error: any) {
@@ -1329,6 +1422,7 @@ async function startBrowserBackedSession(options: {
         host,
         port: 0,
         allowRemote,
+        allowWorldScripts,
         artifactsDir: run.artifactsDir,
       });
     } else {
@@ -1436,15 +1530,16 @@ async function handleMcpConfig(parsed: ParsedCliArgs, io: CliIo, runtime: CliRun
   const cwd = runtime.cwd ?? process.cwd();
   const explicitServerUrl = getStringFlag(parsed, 'server');
   const explicitWorldFilePath = getPositionalOrFlag(parsed, 0, 'world');
+  const allowWorldScripts = getBooleanFlag(parsed, 'allow-world-scripts');
 
   if (explicitServerUrl) {
-    printJson(io, buildMcpConfig({ serverUrl: explicitServerUrl, token: getStringFlag(parsed, 'token') }));
+    printJson(io, buildMcpConfig({ serverUrl: explicitServerUrl, token: getStringFlag(parsed, 'token'), allowWorldScripts }));
     return;
   }
 
   if (explicitWorldFilePath) {
     const worldFilePath = await resolveDefaultWorldFilePath(explicitWorldFilePath, cwd, runtime.env);
-    printJson(io, buildMcpConfig({ worldFilePath }));
+    printJson(io, buildMcpConfig({ worldFilePath, allowWorldScripts }));
     return;
   }
 
@@ -1454,12 +1549,12 @@ async function handleMcpConfig(parsed: ParsedCliArgs, io: CliIo, runtime: CliRun
     return;
   }
 
-  const worldFilePath = await resolveDefaultWorldFilePath(
+  await resolveDefaultWorldFilePath(
     undefined,
     cwd,
     runtime.env,
   );
-  printJson(io, buildMcpConfig());
+  printJson(io, buildMcpConfig({ allowWorldScripts }));
 }
 
 async function handleClean(parsed: ParsedCliArgs, io: CliIo, runtime: CliRuntime): Promise<void> {
@@ -1585,6 +1680,7 @@ export async function runCli(argv: string[], io = defaultIo(), runtime: CliRunti
           await runStdioServer({
             worldFilePath: target.worldFilePath,
             autoSave: !getBooleanFlag(parsed, 'no-auto-save'),
+            allowWorldScripts: getBooleanFlag(parsed, 'allow-world-scripts'),
           });
         }
         return 0;
@@ -1600,6 +1696,9 @@ export async function runCli(argv: string[], io = defaultIo(), runtime: CliRunti
         return 0;
       case 'apply':
         await handleApply(parsed, io, runtime);
+        return 0;
+      case 'run-world-script':
+        await handleRunWorldScript(parsed, io, runtime);
         return 0;
       case 'resource':
         await handleResource(parsed, io, runtime);

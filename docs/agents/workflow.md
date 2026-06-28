@@ -45,6 +45,19 @@ For a complete generated scene, write a full world definition and apply it:
 gizmo apply ./scene.json --world ./world.json
 ```
 
+For procedural world creation in a trusted workspace, write a world script and
+run it explicitly:
+
+```bash
+gizmo run-world-script ./world.world.js --world ./world.json --validate
+```
+
+Only expose world-script execution through MCP when the user explicitly opts in:
+
+```bash
+gizmo start --no-open --port 0 --allow-world-scripts
+```
+
 ## Validate
 
 After each meaningful change:
@@ -56,5 +69,5 @@ After each meaningful change:
 
 ## Safety
 
-Only work in trusted repositories and world files. Do not open unknown
-JavaScript/MJS worlds.
+Only work in trusted repositories and world files. Do not open or execute
+unknown JavaScript/MJS worlds.

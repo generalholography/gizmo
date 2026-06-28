@@ -4,7 +4,10 @@ import { AUTOMATION_COMMAND_NAMES, listAutomationCommands } from '../commands';
 
 describe('Automation command definitions', () => {
   it('matches available command builders', () => {
-    const definitionNames = ENGINE_EDITOR_AGENT_COMMAND_DEFINITIONS.map((command) => command.name).sort();
+    const definitionNames = ENGINE_EDITOR_AGENT_COMMAND_DEFINITIONS
+      .map((command) => command.name)
+      .filter((name) => name !== 'run-world-script')
+      .sort();
     const builderNames = [...AUTOMATION_COMMAND_NAMES].sort();
     expect(definitionNames).toEqual(builderNames);
   });

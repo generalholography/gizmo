@@ -4,6 +4,7 @@ type BootstrapPayload = {
   serverUrl: string;
   worldFilePath: string;
   worldFormat: 'json' | 'world-script';
+  allowWorldScripts?: boolean;
 };
 
 type BrowserRequest =
@@ -87,9 +88,16 @@ async function bootstrapWorld(api: any): Promise<void> {
   await api.loadWorld(worldSource.source);
 }
 
-async function handleRequest(api: any, request: BrowserRequest): Promise<any> {
+function applyAutomationCapabilities(api: any, allowWorldScripts: boolean): void {
+  api.setResource('automationCapabilities', {
+    allowWorldScripts,
+  });
+}
+
+async function handleRequest(api: any, request: BrowserRequest, allowWorldScripts: boolean): Promise<any> {
   switch (request.type) {
     case 'execute-command':
+      applyAutomationCapabilities(api, allowWorldScripts);
       return await api.automation.executeCommand(request.payload.name, request.payload.params);
     case 'execute-batch':
       return await api.automation.executeBatch(request.payload.calls, request.payload.description);
@@ -151,8 +159,11 @@ async function start(): Promise<void> {
       leftPanelCollapsedByDefault: true,
     },
   });
+  const allowWorldScripts = bootstrap.allowWorldScripts === true;
+  applyAutomationCapabilities(api, allowWorldScripts);
 
   await bootstrapWorld(api);
+  applyAutomationCapabilities(api, allowWorldScripts);
   (window as any).__ENGINE_LIVE__ = api;
 
   const summary = api.automation.getResource('world-state-summary');
@@ -189,7 +200,7 @@ async function start(): Promise<void> {
       }
 
       try {
-        const value = await handleRequest(api, response.request);
+        const value = await handleRequest(api, response.request, allowWorldScripts);
         const summary = api.automation.getResource('world-state-summary');
         await postJson('/api/browser/respond', {
           clientId,

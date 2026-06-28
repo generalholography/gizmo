@@ -19,6 +19,7 @@ Use resources to inspect world state before making changes. Prefer stable IDs fo
 - add-body-part(stableId, archetype, localPosition): Append a new body part to a composite body. [changes state; persists world]
 - set-body-part-transform(stableId, path, transform): Set a body part transform. [changes state; persists world]
 - reinitialize-world(definition): Reinitialize the world (respawn entities). [changes state; persists world]
+- run-world-script(source?, path?, validate?): Execute a trusted JavaScript world script and replace the current world. [changes state; persists world]
 - modify-world-settings(settings): Update world-level settings. [changes state; persists world]
 - upsert-module-type(moduleName, typeName, factorySource, description?, parameterSchema?): Register or replace a persisted runtime module type backed by factory source. [changes state; persists world]
 - remove-module-type(moduleName, typeName): Remove a persisted runtime module type. [changes state; persists world]
@@ -40,7 +41,7 @@ Use resources to inspect world state before making changes. Prefer stable IDs fo
 - metadata (engine://world/metadata): World metadata (title, description, dimensions). params: none
 - achievements (engine://world/achievements): List of all achievements. params: none
 - full-world-state (engine://world/full-state): Complete serialized world state. params: none
-- scene-evaluation: Deterministic scene validation and evaluation report for loadability, inventory, bounds, intersections, and coplanar z-fighting risk. params: none
+- scene-evaluation (engine://world/scene-evaluation): Deterministic scene validation and evaluation report for loadability, inventory, bounds, intersections, and coplanar z-fighting risk. params: none
 - entity-bundle (engine://entities/{stableId}): Get a full entity bundle by stable ID. params: stableId
 - render-screenshot (engine://render/screenshot): Capture a screenshot of the full world viewport. params: none
 - viewport-camera (engine://viewport/camera): Current viewport camera pose and framing direction. params: none

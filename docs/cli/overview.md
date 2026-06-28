@@ -23,6 +23,7 @@ gizmo --version
 - `gizmo call`: execute one automation command.
 - `gizmo batch`: execute several automation commands.
 - `gizmo apply`: apply a complete world definition.
+- `gizmo run-world-script`: execute a trusted JavaScript world script.
 - `gizmo resource`: read one automation resource.
 - `gizmo camera`: inspect or move the viewport camera.
 - `gizmo snapshot`: capture a render screenshot.
@@ -53,6 +54,14 @@ JSON flags accept inline JSON or `@path/to/file.json` depending on the command.
 
 ```bash
 gizmo call add-entity --params '{"archetypeOrDef":"cube"}'
+```
+
+World scripts execute trusted JavaScript and require explicit commands or
+opt-in flags:
+
+```bash
+gizmo run-world-script ./scene.world.js --world ./world.json --validate
+gizmo mcp --world ./world.json --allow-world-scripts
 ```
 
 ## Screenshots and Runs

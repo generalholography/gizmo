@@ -288,6 +288,32 @@
       ]
     },
     {
+      "name": "run-world-script",
+      "description": "Execute a trusted JavaScript world script and replace the current world.",
+      "changesState": true,
+      "persistsWorld": true,
+      "parameters": [
+        {
+          "name": "source",
+          "type": "string",
+          "required": false,
+          "description": "Inline JavaScript/MJS world script source. Requires explicit world-script permission."
+        },
+        {
+          "name": "path",
+          "type": "string",
+          "required": false,
+          "description": "Path to a trusted JavaScript/MJS world script file. Requires explicit world-script permission."
+        },
+        {
+          "name": "validate",
+          "type": "boolean",
+          "required": false,
+          "description": "When true, include a scene-evaluation report after the script runs."
+        }
+      ]
+    },
+    {
       "name": "modify-world-settings",
       "description": "Update world-level settings.",
       "changesState": true,

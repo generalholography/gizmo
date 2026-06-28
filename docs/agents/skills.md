@@ -1,16 +1,17 @@
 # Gizmo Agent Skills
 
-Gizmo ships one portable Agent Skill in `.agents/skills/gizmo/`. The skill
+Gizmo ships portable Agent Skills under `.agents/skills/`. The general skill
 teaches coding agents how to use the Gizmo CLI, live sessions, MCP server,
 automation commands/resources, component schemas, module authoring, screenshots,
-and the security model.
+and the security model. The worldscript skill focuses on generating complete
+trusted JavaScript worlds.
 
 ## Included Skill
 
 - `gizmo`: create, inspect, modify, validate, and automate Gizmo worlds with
   the CLI or MCP.
-
-There is intentionally no contributor skill yet.
+- `gizmo-worldscript`: create complete procedural worlds with trusted
+  JavaScript/MJS world scripts and opinionated quality guidance.
 
 ## Canonical Repo Location
 
@@ -41,6 +42,12 @@ Install the Gizmo skill globally:
 npx skills add generalholography/gizmo --skill gizmo -g -y
 ```
 
+Install the worldscript skill globally:
+
+```bash
+npx skills add generalholography/gizmo --skill gizmo-worldscript -g -y
+```
+
 If you need a client-specific install, pass the agent adapter explicitly:
 
 ```bash
@@ -48,7 +55,7 @@ npx skills add generalholography/gizmo --skill gizmo -a codex -g -y
 npx skills add generalholography/gizmo --skill gizmo -a claude-code -g -y
 ```
 
-Install all repo skills, which is currently equivalent:
+Install all repo skills:
 
 ```bash
 npx skills add generalholography/gizmo --skill '*' -a codex -g -y
@@ -80,6 +87,10 @@ Print one skill prompt:
 npx -y @gizmo3d/cli@latest skills --print gizmo
 ```
 
+```bash
+npx -y @gizmo3d/cli@latest skills --print gizmo-worldscript
+```
+
 Print the bundled skills directory for manual installs:
 
 ```bash
@@ -93,6 +104,7 @@ Codex global install:
 ```bash
 mkdir -p ~/.codex/skills
 cp -R .agents/skills/gizmo ~/.codex/skills/
+cp -R .agents/skills/gizmo-worldscript ~/.codex/skills/
 ```
 
 Claude Code global install:
@@ -100,6 +112,7 @@ Claude Code global install:
 ```bash
 mkdir -p ~/.claude/skills
 cp -R .agents/skills/gizmo ~/.claude/skills/
+cp -R .agents/skills/gizmo-worldscript ~/.claude/skills/
 ```
 
 ## Maintenance Rules

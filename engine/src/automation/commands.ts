@@ -24,6 +24,7 @@ import { componentSchemaRegistry } from '../core/editor/schema';
 import { getEntityBundle } from '../core/despawn';
 import { getPartAtPath, normalizeBodyPartPath, type CompositeBody } from '../core/editor/utils/bodyParts';
 import { readAutomationResource } from './resources';
+import { createWorldDefinition, initialize } from '../core/initializeWorld';
 import { stableIdToEid } from '../utils/stableId';
 import type { Body, Node } from '../core/schema';
 import type { EngineAPI } from '..';
@@ -57,6 +58,10 @@ interface CommandBuildResult {
 }
 
 type CommandBuilder = (ctx: ECSContext, engine: EngineAPI, params: Record<string, any>) => CommandBuildResult;
+type WorldScriptContextRunner = (
+  ctx: ECSContext,
+  options: { source: string } | { path: string },
+) => Promise<any>;
 
 const QUATERNION_IDENTITY = { x: 0, y: 0, z: 0, w: 1 };
 const resolveTargetEid = (ctx: ECSContext, params: Record<string, any>, commandName: string): number => {
@@ -583,8 +588,64 @@ function buildCommand(ctx: ECSContext, engine: EngineAPI, name: string, params: 
   return builder(ctx, engine, params);
 }
 
+function worldScriptsAllowed(ctx: ECSContext): boolean {
+  const capabilities = getResource<{ allowWorldScripts?: boolean }>(ctx, 'automationCapabilities', true);
+  return capabilities?.allowWorldScripts === true;
+}
+
+async function executeRunWorldScriptCommand(ctx: ECSContext, engine: EngineAPI, params: Record<string, any>): Promise<string> {
+  validateAutomationCommandCall('run-world-script', params);
+  if (!worldScriptsAllowed(ctx)) {
+    throw new Error('run-world-script requires explicit world-script permission.');
+  }
+
+  const source = typeof params.source === 'string' && params.source.trim() ? params.source : undefined;
+  const sourcePath = typeof params.path === 'string' && params.path.trim() ? params.path : undefined;
+  if ((source ? 1 : 0) + (sourcePath ? 1 : 0) !== 1) {
+    throw new Error('run-world-script requires exactly one of source or path.');
+  }
+
+  if (source && engine && typeof engine.loadWorld === 'function') {
+    await engine.loadWorld(source);
+    setResource(ctx, 'automationCapabilities', {
+      allowWorldScripts: true,
+    });
+  } else {
+    const runWorldScriptInContext = getResource<WorldScriptContextRunner>(ctx, 'runWorldScriptInContext', true);
+    if (!runWorldScriptInContext) {
+      throw new Error('run-world-script path execution requires a headless world-script runner.');
+    }
+    initialize(ctx, createWorldDefinition(), {
+      merge: false,
+      spawnEntities: true,
+    });
+    setResource(ctx, 'automationCapabilities', {
+      allowWorldScripts: true,
+    });
+    await runWorldScriptInContext(ctx, source ? { source } : { path: sourcePath });
+  }
+
+  const summary = readAutomationResource(ctx, 'world-state-summary');
+  const payload: Record<string, any> = {
+    ok: true,
+    changed: true,
+    source: source ? 'inline' : 'path',
+    summary,
+  };
+  if (sourcePath) {
+    payload.path = sourcePath;
+  }
+  if (params.validate === true) {
+    payload.evaluation = readAutomationResource(ctx, 'scene-evaluation');
+  }
+  return JSON.stringify(payload, null, 2);
+}
+
 /** Execute one automation command. */
 export async function executeAutomationCommand(ctx: ECSContext, engine: EngineAPI, name: string, params: any): Promise<string> {
+  if (name === 'run-world-script') {
+    return await executeRunWorldScriptCommand(ctx, engine, params ?? {});
+  }
   const { command, result } = buildCommand(ctx, engine, name, params);
   const manager = getCommandManager(ctx);
   manager.execute(command);
@@ -598,6 +659,9 @@ export async function executeAutomationBatch(
   calls: AutomationCommandCall[],
   description = 'AI Edit Batch',
 ): Promise<string[]> {
+  if (calls.some((call) => call.name === 'run-world-script')) {
+    throw new Error('run-world-script cannot be used in a batch.');
+  }
   const built = calls.map((call) => buildCommand(ctx, engine, call.name, call.params));
   const bulkCommand = new BulkCommand(
     built.map((entry) => entry.command),

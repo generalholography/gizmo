@@ -28,6 +28,7 @@ const staticResourceUris = {
   metadata: 'engine://world/metadata',
   achievements: 'engine://world/achievements',
   'full-world-state': 'engine://world/full-state',
+  'scene-evaluation': 'engine://world/scene-evaluation',
   'render-screenshot': 'engine://render/screenshot',
   'viewport-camera': 'engine://viewport/camera',
 };

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { ENGINE_AUTOMATION_RESOURCE_DEFINITIONS } from '../../../engine/src/automation/resourceCatalog';
 import { getMcpResourceUri, resolveAutomationResourceRequestFromMcpUri } from '../resourceUris';
 
 describe('MCP resource URI interoperability', () => {
+  it('maps every engine automation resource to an MCP URI', () => {
+    for (const resource of ENGINE_AUTOMATION_RESOURCE_DEFINITIONS) {
+      expect(() => getMcpResourceUri(resource)).not.toThrow();
+    }
+  });
+
   it('maps static automation resources to canonical MCP URIs', () => {
     const summary = {
       kind: 'static',
@@ -20,6 +27,16 @@ describe('MCP resource URI interoperability', () => {
       mimeType: 'application/json',
     } as const;
     expect(getMcpResourceUri(moduleTypes)).toBe('engine://modules/types');
+  });
+
+  it('maps scene evaluation to its canonical MCP URI', () => {
+    const sceneEvaluation = {
+      kind: 'static',
+      name: 'scene-evaluation',
+      description: 'scene evaluation',
+      mimeType: 'application/json',
+    } as const;
+    expect(getMcpResourceUri(sceneEvaluation)).toBe('engine://world/scene-evaluation');
   });
 
   it('maps template automation resources to canonical MCP URI templates', () => {

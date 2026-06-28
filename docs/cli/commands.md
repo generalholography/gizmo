@@ -15,6 +15,7 @@ gizmo mcp-config Print MCP configuration
 gizmo call       Execute one automation command
 gizmo batch      Execute multiple automation commands
 gizmo apply      Apply a complete world definition
+gizmo run-world-script Execute a trusted JavaScript world script
 gizmo resource   Read one automation resource
 gizmo camera     Inspect or control the viewport camera
 gizmo snapshot   Capture a render screenshot
@@ -74,6 +75,24 @@ browser can load it when opened or refreshed.
 Generated reference:
 
 - [Automation commands](../reference/automation-commands.generated.md)
+
+## Trusted World Scripts
+
+Use `run-world-script` when a complete generated world is easier to express as
+trusted JavaScript than raw JSON. World scripts execute local code, so only run
+scripts from trusted workspaces.
+
+```bash
+gizmo run-world-script ./scene.world.js --world ./world.json --validate
+gizmo run-world-script --source @scene.world.js --world ./world.json --dry-run
+```
+
+MCP and live sessions hide script execution by default. Opt in explicitly:
+
+```bash
+gizmo mcp --world ./world.json --allow-world-scripts
+gizmo start --no-open --port 0 --allow-world-scripts
+```
 
 ## Automation Resources
 

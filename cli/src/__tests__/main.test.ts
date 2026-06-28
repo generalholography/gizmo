@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { runCli } from '../main';
 import { startLiveSessionServer } from '../liveServer';
@@ -11,6 +12,7 @@ import { readCliSessionConfig, writeCliLiveSessionConfig, writeCliWorldSessionCo
 import { createWorldDefinition } from '@gizmo3d/engine/automation';
 
 describe('CLI main', () => {
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
   const tempPaths: string[] = [];
 
   afterEach(async () => {
@@ -251,6 +253,90 @@ describe('CLI main', () => {
 
     const payload = JSON.parse(resourceIo.stdout[0]);
     expect(payload.entityCount).toBe(1);
+  });
+
+  it('runs trusted world scripts through the dedicated CLI command', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-world-script-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    const scriptPath = path.join(tempDir, 'scene.world.js');
+    tempPaths.push(tempDir);
+
+    await fs.writeFile(scriptPath, `
+      export default {
+        setupScene(api) {
+          api.initialize({
+            title: 'CLI Script World',
+            entities: [
+              { Info: { name: 'CLI Script Plaza' }, Transform: { x: 1, y: 0, z: 2 } }
+            ]
+          }, { merge: false, spawnEntities: true });
+        }
+      };
+    `);
+
+    const { io, stdout, stderr } = createIo();
+    const exitCode = await runCli(['run-world-script', scriptPath, '--world', worldFilePath, '--validate'], io);
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toEqual([]);
+    const payload = JSON.parse(stdout[0]);
+    expect(payload).toMatchObject({
+      ok: true,
+      changed: true,
+      persisted: true,
+      summary: { title: 'CLI Script World', entityCount: 1 },
+    });
+    expect(payload.evaluation).toMatchObject({ ok: true });
+
+    const saved = JSON.parse(await fs.readFile(worldFilePath, 'utf8'));
+    expect(saved.title).toBe('CLI Script World');
+  });
+
+  it('runs generated WorldScript skill examples with clean scene evaluation', async () => {
+    const examples = [
+      'starter-world.js',
+      'arena-survival.world.js',
+      'puzzle-dungeon.world.js',
+      'dropper-race.world.js',
+    ];
+
+    for (const fileName of examples) {
+      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-worldscript-example-'));
+      tempPaths.push(tempDir);
+      const worldFilePath = path.join(tempDir, 'world.json');
+      const scriptPath = path.join(repoRoot, '.agents/skills/gizmo-worldscript/assets', fileName);
+      const { io, stdout, stderr } = createIo();
+
+      const exitCode = await runCli(['run-world-script', scriptPath, '--world', worldFilePath, '--validate'], io);
+      expect(exitCode, fileName).toBe(0);
+      expect(stderr, fileName).toEqual([]);
+
+      const payload = JSON.parse(stdout[0]);
+      expect(payload.ok, fileName).toBe(true);
+      expect(payload.evaluation, fileName).toMatchObject({
+        ok: true,
+        summary: { errors: 0, warnings: 0 },
+      });
+    }
+  });
+
+  it('prints MCP config with world-script opt-in when requested', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engine-cli-mcp-config-world-script-'));
+    const worldFilePath = path.join(tempDir, 'world.json');
+    tempPaths.push(tempDir);
+
+    const initIo = createIo();
+    expect(await runCli(['init', worldFilePath], initIo.io)).toBe(0);
+
+    const { io, stdout } = createIo();
+    expect(await runCli(['mcp-config', worldFilePath, '--allow-world-scripts'], io)).toBe(0);
+    const payload = JSON.parse(stdout[0]);
+    expect(payload.mcpServers.gizmo.args).toEqual([
+      'mcp',
+      '--world',
+      worldFilePath,
+      '--allow-world-scripts',
+    ]);
   });
 
   it('executes headless batches atomically through the shared automation session', async () => {
