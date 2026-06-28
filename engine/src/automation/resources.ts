@@ -5,6 +5,8 @@
 import { ECSContext, getResource } from '../core/ecs';
 import { getEntityBundle } from '../core/despawn';
 import { serializeWorld } from '../core/serializeWorld';
+import { defineQuery } from 'bitecs';
+import * as Components from '../core/components';
 import { componentSchemaRegistry } from '../core/editor/schema';
 import { getPartAtPath, type CompositeBody } from '../core/editor/utils/bodyParts';
 import { ReactiveMap } from '../utils/reactiveTypes';
@@ -26,11 +28,17 @@ export interface AutomationResource {
   handler: (ctx: ECSContext, params?: Record<string, any>) => string | object;
 }
 
+const liveEntityQuery = defineQuery([Components.Transform]);
+
 function collectEntityBundles(worldState: ReturnType<typeof serializeWorld>) {
   const entities = worldState.dimensions
     ?.flatMap((dimension) => dimension.chunks ?? [])
     .flatMap((chunk) => chunk.entities ?? []) ?? [];
   return entities;
+}
+
+function collectLiveEntityBundles(ctx: ECSContext) {
+  return Array.from(liveEntityQuery(ctx)).map((eid) => getEntityBundle(ctx, eid, { includeRuntime: false }));
 }
 
 function resolveEntityLabel(entity: any): string {
@@ -43,7 +51,7 @@ function resolveEntityLabel(entity: any): string {
 
 function createWorldStateSummary(ctx: ECSContext): object {
   const worldState = serializeWorld(ctx, { includeEntities: true });
-  const entities = collectEntityBundles(worldState);
+  const entities = collectLiveEntityBundles(ctx);
 
   const entityGroups = new Map<string, number>();
   entities.forEach((entity) => {
@@ -161,8 +169,7 @@ export const worldStateResources: AutomationResource[] = [
     description: 'List of all entities with basic info',
     contentType: 'json',
     handler: (ctx) => {
-      const worldState = serializeWorld(ctx, { includeEntities: true });
-      const entities = collectEntityBundles(worldState);
+      const entities = collectLiveEntityBundles(ctx);
       return entities.map((entity) => ({
         stableId: entity.StableID?.id,
         transform: entity.Transform,

@@ -73,6 +73,21 @@ export interface FieldMetadata {
   // Module reference-specific
   /** Name of the module (e.g., 'body', 'material', 'motionSource') */
   moduleName?: string;
+
+  /** How a moduleReference stores its value. Defaults to inline definition data. */
+  referenceMode?: 'definition' | 'instance';
+
+  /** Whether a moduleReference instance field may create a new named instance. */
+  allowCreateInstance?: boolean;
+
+  /** Whether a moduleReference instance field may edit the selected instance definition. */
+  allowEditInstance?: boolean;
+
+  /** Fields to summarize in compact module instance rows. Dot paths are supported. */
+  compactFields?: string[];
+
+  /** Preferred detail editor surface for moduleReference fields. */
+  popoutMode?: 'left' | 'modal';
   
   // UI hints
   /** Display label (defaults to name if not provided) */

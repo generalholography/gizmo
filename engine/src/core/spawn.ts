@@ -567,6 +567,9 @@ export function applyBundle(ctx: ECSContext, eid: number, bundle: Record<string,
       else if (compName === "Faction") {
         writeEncodedString(comp.id[eid] as Uint8Array, fields.id || NO_FACTION_ID);
       }
+      else if (compName === "SpawnerOwned") {
+        writeEncodedString(comp.spawnerName[eid] as Uint8Array, fields.spawnerName ?? "");
+      }
       else if (compName === "StaticCamera") {
         comp.fov[eid] = fields.fov ?? 75;
         

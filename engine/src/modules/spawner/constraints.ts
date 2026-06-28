@@ -45,6 +45,20 @@ export interface TerrainSettings {
   heightOffset: number;
 }
 
+function normalizeTerrainSize(size: any): number {
+  if (typeof size === 'object' && size !== null) {
+    const x = Number(size.x ?? size.width ?? DEFAULT_NORMALIZATION_SIZE);
+    const z = Number(size.z ?? size.depth ?? x);
+    return Math.max(
+      Number.isFinite(x) && x > 0 ? x : DEFAULT_NORMALIZATION_SIZE,
+      Number.isFinite(z) && z > 0 ? z : DEFAULT_NORMALIZATION_SIZE,
+    );
+  }
+
+  const uniform = Number(size ?? DEFAULT_NORMALIZATION_SIZE);
+  return Number.isFinite(uniform) && uniform > 0 ? uniform : DEFAULT_NORMALIZATION_SIZE;
+}
+
 /**
  * Get terrain settings from the current dimension
  * Falls back to spawnerDefaults if dimension terrain is not configured
@@ -61,9 +75,13 @@ export function getTerrainSettings(ctx: ECSContext): TerrainSettings | undefined
   }
   
   const terrain = metadata.dimensions[0].terrain;
+  if (terrain.enabled === false || typeof terrain.heightField !== 'string') {
+    return undefined;
+  }
+
   return {
     heightField: terrain.heightField,
-    size: terrain.size ?? DEFAULT_NORMALIZATION_SIZE,
+    size: normalizeTerrainSize(terrain.size),
     heightOffset: terrain.heightOffset ?? 0,
   };
 }

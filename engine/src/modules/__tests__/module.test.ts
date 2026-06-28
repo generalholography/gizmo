@@ -40,4 +40,18 @@ describe('Module', () => {
     expect(id1).toBe(id2);
     expect(mod.get(id1)).toBe(mod.get(id2));
   });
+
+  it('replaceDefinition invalidates the previous resolved resource for the same name', () => {
+    const mod = new Module<Def, string>(ctx, { foo: p => `foo:${p.val}` });
+    mod.register('terrainHeight', { type: 'foo', params: { val: 1 } });
+    const oldId = mod.resolve('terrainHeight');
+    expect(mod.get(oldId)).toBe('foo:1');
+
+    mod.replaceDefinition('terrainHeight', { type: 'foo', params: { val: 2 } });
+    const newId = mod.resolve('terrainHeight');
+
+    expect(newId).not.toBe(oldId);
+    expect(mod.get(newId)).toBe('foo:2');
+    expect(mod.get(oldId)).toBeUndefined();
+  });
 });

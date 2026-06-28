@@ -220,6 +220,12 @@ function serializeComponent(
     };
   }
 
+  if (compName === 'SpawnerOwned') {
+    return {
+      spawnerName: decode(comp.spawnerName[eid]),
+    };
+  }
+
   if (compName === 'StaticCamera') {
     return {
       fov: comp.fov[eid],

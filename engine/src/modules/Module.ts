@@ -29,6 +29,23 @@ export class Module<D extends { type: string; params: any }, R> {
     }
   }
 
+  replaceDefinition(name: string, def: D, isBuiltIn: boolean = false): void {
+    const previous = this.definitionsByName[name];
+    if (previous) {
+      const previousId = this.hashDef(previous);
+      this.disposeResolved(previousId);
+      delete this.registry[previousId];
+      delete this.definitionsById[previousId];
+    }
+
+    this.definitionsByName[name] = def;
+    if (isBuiltIn) {
+      this.builtInDefinitions.add(name);
+    } else {
+      this.builtInDefinitions.delete(name);
+    }
+  }
+
   registerType(name: string, factory: (params: any) => R): void {
     this.factories[name] = factory;
   }
@@ -140,6 +157,10 @@ export class Module<D extends { type: string; params: any }, R> {
     if (!this.hasDefinition(name)) {
       return false;
     }
+    const previousId = this.hashDef(this.definitionsByName[name]);
+    this.disposeResolved(previousId);
+    delete this.registry[previousId];
+    delete this.definitionsById[previousId];
     delete this.definitionsByName[name];
     this.builtInDefinitions.delete(name);
     return true;
@@ -203,6 +224,17 @@ export class Module<D extends { type: string; params: any }, R> {
     return JSON.stringify(a) === JSON.stringify(b);
   }
 
+  private disposeResolved(id: number): void {
+    const resource = this.registry[id];
+    if (resource && typeof (resource as any).dispose === 'function') {
+      try {
+        (resource as any).dispose();
+      } catch (e) {
+        console.warn('[MODULE] Failed to dispose resource:', e);
+      }
+    }
+  }
+
   /**
    * Clear all registries and dispose resources
    * This prevents memory leaks by releasing THREE.js objects and other cached resources
@@ -211,15 +243,7 @@ export class Module<D extends { type: string; params: any }, R> {
     console.log('[MODULE] Clearing registries...');
     
     // Dispose registry resources that support disposal
-    Object.values(this.registry).forEach((resource) => {
-      if (resource && typeof (resource as any).dispose === 'function') {
-        try {
-          (resource as any).dispose();
-        } catch (e) {
-          console.warn('[MODULE] Failed to dispose resource:', e);
-        }
-      }
-    });
+    Object.keys(this.registry).forEach((id) => this.disposeResolved(Number(id)));
     
     // Clear all maps by reassigning to new empty objects
     // This is safer than deleting keys because it handles non-enumerable properties

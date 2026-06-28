@@ -13,6 +13,7 @@ import { defineQuery, hasComponent } from 'bitecs';
 import * as Components from './components';
 import { Module } from '../modules/Module';
 import { listPersistedRuntimeModuleTypes } from './runtimeModuleTypes';
+import { isDimensionTerrainEntity } from './dimensionTerrain';
 
 // Query to find all entities (excluding temporary/system entities if needed)
 const allEntitiesQuery = defineQuery([Components.Transform]);
@@ -177,6 +178,16 @@ export function serializeWorld(
 
       // Skip dimension-level particle system entities (serialized in world definition)
       if (Components.WorldParticleSystem && hasComponent(ctx, Components.WorldParticleSystem, eid)) {
+        continue;
+      }
+
+      // Skip dimension-level terrain entities (serialized in world definition)
+      if (isDimensionTerrainEntity(ctx, eid)) {
+        continue;
+      }
+
+      // Skip spawner-owned generated entities; the spawner definition is the source of truth.
+      if (Components.SpawnerOwned && hasComponent(ctx, Components.SpawnerOwned, eid)) {
         continue;
       }
       

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createWorld } from 'bitecs';
+import { createWorld, hasComponent } from 'bitecs';
 import { Module } from '../../modules/Module';
 import type { ECSContext } from '../ecs';
 import { Timer } from 'three/examples/jsm/misc/Timer.js';
@@ -13,6 +13,19 @@ import { conditionModule } from '../../modules/condition';
 import { entityStoreModule, UnlockedAchievementsStore, MetricsStore } from '../../modules/entityStore';
 import { spawn } from '../spawn';
 import { despawn } from '../despawn';
+import { bodyModule } from '../../modules/body';
+import { fieldModule } from '../../modules/field';
+import { materialModule } from '../../modules/material';
+import { meshModule } from '../../modules/mesh';
+import { groupOperationModule } from '../../modules/groupOperation';
+import { getDimensionTerrainEntityIds } from '../dimensionTerrain';
+import { colliderModule } from '../../modules/collider';
+import { constraintsModule } from '../../modules/spawner/constraints';
+import { placementModule } from '../../modules/spawner/placement';
+import { selectionModule } from '../../modules/spawner/selection';
+import { spawnerModule, SpawnerModule } from '../../modules/spawner';
+import { upsertRuntimeModuleInstance } from '../runtimeModuleTypes';
+import { Body, SpawnerOwned, StableID, Transform } from '../components';
 
 function getSerializedEntities(worldDef: WorldDefinition | any): any[] {
   const chunkEntities =
@@ -73,6 +86,16 @@ function createTestContext(): ECSContext {
     }
   }
   world.modules.set('motionSource', new MockMotionSourceModule(world));
+  world.modules.set('field', fieldModule(world));
+  world.modules.set('material', materialModule(world));
+  world.modules.set('mesh', meshModule(world));
+  world.modules.set('groupOperation', groupOperationModule(world));
+  world.modules.set('collider', colliderModule(world));
+  world.modules.set('body', bodyModule(world));
+  world.modules.set('placement', placementModule(world));
+  world.modules.set('selection', selectionModule(world));
+  world.modules.set('constraints', constraintsModule(world));
+  world.modules.set('spawner', spawnerModule(world));
   
   // Add condition module for achievements/rules/triggers
   world.modules.set('condition', conditionModule(world));
@@ -125,6 +148,323 @@ describe('World Initialization', () => {
     expect(metadata.description).toBe('A test world');
     expect(metadata.tags).toContain('test');
     expect(metadata.brandColors).toContain('#ff0000');
+  });
+
+  it('spawns dimension terrain from dimension metadata', () => {
+    const definition: WorldDefinition = {
+      title: 'Terrain World',
+      dimensions: [{
+        name: 'base',
+        gravity: -9.81,
+        useDayNightCycle: false,
+        sky: { color: '#87ceeb' },
+        terrain: {
+          heightField: { type: 'simplex', params: { seed: 7, amplitude: 4, frequency: 0.7, octaves: 2 } },
+          size: 80,
+          resolution: 16,
+          heightOffset: 0.25,
+        },
+        chunks: [],
+      }],
+    };
+
+    initialize(ctx, definition);
+
+    const terrainEntities = getDimensionTerrainEntityIds(ctx);
+    expect(terrainEntities).toHaveLength(1);
+
+    const metadata = ctx.resources.get('metadata')?.resource as WorldMetadata;
+    expect(metadata.dimensions[0].terrain?.heightField).toBe('base.terrainHeight');
+  });
+
+  it('assigns generated terrain stable IDs after declared entity stable IDs', () => {
+    initialize(ctx, {
+      dimensions: [{
+        name: 'base',
+        gravity: -9.81,
+        useDayNightCycle: false,
+        sky: { color: '#87ceeb' },
+        terrain: {
+          heightField: 'terrainHeight',
+          size: 60,
+          resolution: 16,
+        },
+        chunks: [{
+          chunkId: 'main',
+          bounds: null,
+          entities: [{
+            StableID: { id: 41 },
+            Info: { name: 'Declared Entity' },
+            Transform: {},
+          }],
+          entityCount: 1,
+          version: 1,
+          updatedAt: 0,
+        }],
+      }],
+      modules: {
+        field: [{
+          name: 'terrainHeight',
+          definition: { type: 'simplex', params: { seed: 1, amplitude: 3 } },
+        }],
+      },
+    });
+
+    const [terrainEid] = getDimensionTerrainEntityIds(ctx);
+    expect(StableID.id[terrainEid]).toBe(42);
+  });
+
+  it('serializes dimension terrain as metadata instead of a generated entity', () => {
+    initialize(ctx, {
+      dimensions: [{
+        name: 'base',
+        gravity: -9.81,
+        useDayNightCycle: false,
+        sky: { color: '#87ceeb' },
+        terrain: {
+          heightField: 'terrainHeight',
+          size: 60,
+          resolution: 16,
+        },
+        chunks: [],
+      }],
+      modules: {
+        field: [{
+          name: 'terrainHeight',
+          definition: { type: 'simplex', params: { seed: 1, amplitude: 3 } },
+        }],
+      },
+    });
+
+    const serialized = serializeWorld(ctx, { includeEntities: true, includeRuntime: false });
+    expect(serialized.dimensions?.[0]?.terrain?.heightField).toBe('terrainHeight');
+    expect(getSerializedEntities(serialized)).toHaveLength(0);
+  });
+
+  it('rebuilds dimension terrain geometry when a referenced height field changes', () => {
+    initialize(ctx, {
+      dimensions: [{
+        name: 'base',
+        gravity: -9.81,
+        useDayNightCycle: false,
+        sky: { color: '#87ceeb' },
+        terrain: {
+          heightField: 'terrainHeight',
+          size: 80,
+          resolution: 16,
+        },
+        chunks: [],
+      }],
+      modules: {
+        field: [{
+          name: 'terrainHeight',
+          definition: { type: 'simplex', params: { seed: 9, frequency: 0.8, amplitude: 1, octaves: 2 } },
+        }],
+      },
+    });
+
+    const bodyMod = ctx.modules.get('body') as any;
+    const [initialTerrainEid] = getDimensionTerrainEntityIds(ctx);
+    const initialBodyId = Body.bodyId[initialTerrainEid];
+    const initialBounds = bodyMod.get(initialBodyId).localBounds;
+    const initialHeight = initialBounds.max.y - initialBounds.min.y;
+
+    upsertRuntimeModuleInstance(ctx, 'field', 'terrainHeight', {
+      type: 'simplex',
+      params: { seed: 9, frequency: 0.8, amplitude: 8, octaves: 2 },
+    });
+
+    const [updatedTerrainEid] = getDimensionTerrainEntityIds(ctx);
+    const updatedBodyId = Body.bodyId[updatedTerrainEid];
+    const updatedBounds = bodyMod.get(updatedBodyId).localBounds;
+    const updatedHeight = updatedBounds.max.y - updatedBounds.min.y;
+
+    expect(updatedTerrainEid).not.toBe(initialTerrainEid);
+    expect(updatedBodyId).not.toBe(initialBodyId);
+    expect(updatedHeight).toBeGreaterThan(initialHeight * 3);
+  });
+
+  it('regenerates terrain-based spawner outputs when a referenced height field changes', () => {
+    initialize(ctx, {
+      dimensions: [{
+        name: 'base',
+        gravity: -9.81,
+        useDayNightCycle: false,
+        sky: { color: '#87ceeb' },
+        terrain: {
+          heightField: 'terrainHeight',
+          size: 80,
+          resolution: 16,
+        },
+        chunks: [],
+      }],
+      modules: {
+        field: [{
+          name: 'terrainHeight',
+          definition: { type: 'simplex', params: { seed: 4, frequency: 1, amplitude: 1 } },
+        }],
+      },
+      spawners: [{
+        type: 'composite',
+        params: {
+          name: 'terrain-markers',
+          placement: {
+            type: 'grid',
+            params: {
+              bounds: { x: [-12, 12], z: [-12, 12] },
+              spacing: 12,
+            },
+          },
+          selection: {
+            type: 'single',
+            params: {
+              entity: {
+                Info: { name: 'Terrain Marker' },
+                Transform: {},
+                Body: {
+                  type: 'composite',
+                  params: {
+                    parts: [{
+                      geometry: { type: 'box', params: { lengthX: 1, lengthY: 1, lengthZ: 1 } },
+                      material: { type: 'solid', params: { color: '#ff0000' } },
+                    }],
+                  },
+                },
+              },
+            },
+          },
+          heightField: 'terrainHeight',
+          terrainSize: 80,
+        },
+      }],
+    });
+
+    const spawner = ctx.modules.get('spawner') as SpawnerModule;
+    const initialResult = spawner.getResult('terrain-markers')!;
+    const initialEntityIds = [...initialResult.entityIds];
+    const initialYs = initialEntityIds.map((eid) => Transform.y[eid]);
+
+    upsertRuntimeModuleInstance(ctx, 'field', 'terrainHeight', {
+      type: 'simplex',
+      params: { seed: 4, frequency: 1, amplitude: 8 },
+    });
+
+    const updatedResult = spawner.getResult('terrain-markers')!;
+    const updatedEntityIds = [...updatedResult.entityIds];
+    const updatedYs = updatedEntityIds.map((eid) => Transform.y[eid]);
+
+    expect(updatedEntityIds).toHaveLength(initialEntityIds.length);
+    expect(updatedEntityIds).not.toEqual(initialEntityIds);
+    for (const eid of updatedEntityIds) {
+      expect(hasComponent(ctx, SpawnerOwned, eid)).toBe(true);
+    }
+    expect(Math.max(...updatedYs.map((y, index) => Math.abs(y - initialYs[index])))).toBeGreaterThan(0.5);
+  });
+
+  it('serializes spawner-owned outputs as generated and recreates them on load', () => {
+    const definition: WorldDefinition = {
+      dimensions: [{
+        name: 'base',
+        gravity: -9.81,
+        useDayNightCycle: false,
+        sky: { color: '#87ceeb' },
+        terrain: {
+          heightField: 'terrainHeight',
+          size: 80,
+          resolution: 16,
+        },
+        chunks: [],
+      }],
+      modules: {
+        field: [{
+          name: 'terrainHeight',
+          definition: { type: 'simplex', params: { seed: 4, frequency: 1, amplitude: 1 } },
+        }],
+        spawner: [{
+          name: 'terrain-markers',
+          definition: {
+            type: 'composite',
+            params: {
+              name: 'terrain-markers',
+              placement: {
+                type: 'grid',
+                params: { bounds: { x: [-12, 12], z: [-12, 12] }, spacing: 12 },
+              },
+              selection: {
+                type: 'single',
+                params: { entity: { Info: { name: 'Terrain Marker' }, Transform: {} } },
+              },
+              heightField: 'terrainHeight',
+              terrainSize: 80,
+            },
+          },
+        }],
+      },
+    };
+
+    initialize(ctx, definition);
+    const spawner = ctx.modules.get('spawner') as SpawnerModule;
+    const initialResult = spawner.getResult('terrain-markers')!;
+    expect(initialResult.entityIds.length).toBeGreaterThan(0);
+    expect(hasComponent(ctx, SpawnerOwned, initialResult.entityIds[0])).toBe(true);
+
+    const serialized = serializeWorld(ctx, { includeEntities: true, includeRuntime: true });
+    expect(getSerializedEntities(serialized)).toHaveLength(0);
+    expect((serialized.modules?.spawner?.[0] as any).isExecuted).toBeUndefined();
+
+    const reloaded = createTestContext();
+    initialize(reloaded, serialized);
+    const reloadedSpawner = reloaded.modules.get('spawner') as SpawnerModule;
+    const reloadedResult = reloadedSpawner.getResult('terrain-markers')!;
+    expect(reloadedResult.entityIds).toHaveLength(initialResult.entityIds.length);
+    expect(hasComponent(reloaded, SpawnerOwned, reloadedResult.entityIds[0])).toBe(true);
+  });
+
+  it('upserts spawner definitions by replacing previous owned outputs', () => {
+    initialize(ctx, {
+      modules: {
+        spawner: [{
+          name: 'markers',
+          definition: {
+            type: 'composite',
+            params: {
+              name: 'markers',
+              placement: {
+                type: 'grid',
+                params: { bounds: { x: [-12, 12], z: [-12, 12] }, spacing: 12 },
+              },
+              selection: {
+                type: 'single',
+                params: { entity: { Info: { name: 'Marker' }, Transform: {} } },
+              },
+            },
+          },
+        }],
+      },
+    });
+
+    const spawner = ctx.modules.get('spawner') as SpawnerModule;
+    const initialIds = [...spawner.getResult('markers')!.entityIds];
+
+    upsertRuntimeModuleInstance(ctx, 'spawner', 'markers', {
+      type: 'composite',
+      params: {
+        name: 'markers',
+        placement: {
+          type: 'grid',
+          params: { bounds: { x: [-12, 12], z: [-12, 12] }, spacing: 24 },
+        },
+        selection: {
+          type: 'single',
+          params: { entity: { Info: { name: 'Marker' }, Transform: {} } },
+        },
+      },
+    });
+
+    const updatedIds = [...spawner.getResult('markers')!.entityIds];
+    expect(updatedIds.length).toBeLessThan(initialIds.length);
+    expect(updatedIds.every((eid) => hasComponent(ctx, SpawnerOwned, eid))).toBe(true);
+    expect(initialIds.some((eid) => hasComponent(ctx, Transform, eid))).toBe(false);
   });
 
   it('initializes world with dimensions', () => {

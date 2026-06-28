@@ -19,3 +19,5 @@ export { AI } from "./AI";
 export { StaticCamera } from "./StaticCamera";
 export { ParticleEmitter } from "./ParticleEmitter";
 export { WorldParticleSystem } from "./WorldParticleSystem";
+export { DimensionTerrain } from "./DimensionTerrain";
+export { SpawnerOwned } from "./SpawnerOwned";

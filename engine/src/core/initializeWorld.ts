@@ -12,6 +12,7 @@ import { spawn, restoreDeferredEntityReferences } from './spawn';
 import { Module } from '../modules/Module';
 import { SpawnerModule } from '../modules/spawner';
 import { hydrateRuntimeModuleTypes } from './runtimeModuleTypes';
+import { syncDimensionTerrain } from './dimensionTerrain';
 
 /**
  * Initialize a world from a declarative definition
@@ -164,34 +165,17 @@ export function initialize(
   // Restore runtime-registered module instances
   if (definition.modules) {
     for (const [moduleName, instances] of Object.entries(definition.modules)) {
+      if (moduleName === 'spawner') {
+        continue;
+      }
       const module = getModule<Module<any, any>>(ctx, moduleName);
       if (module) {
-        // Special handling for spawner module to restore spawner states
-        if (moduleName === 'spawner' && module instanceof SpawnerModule) {
-          const spawnerMod = module as SpawnerModule;
-          // Refresh terrain settings before restoring spawners
-          spawnerMod.refreshTerrainSettings();
-          
-          for (const instance of instances as Array<{ name: string; definition: any; isExecuted?: boolean; waveState?: any }>) {
-            try {
-              // Pass saved state to registerSpawner to restore execution state
-              // This prevents one-shot spawners from re-executing on load
-              const savedState = instance.isExecuted || instance.waveState
-                ? { isExecuted: instance.isExecuted, waveState: instance.waveState }
-                : undefined;
-              spawnerMod.registerSpawner(instance.definition, savedState);
-            } catch (error) {
-              console.error(`Failed to restore spawner '${instance.name}':`, error);
-            }
-          }
-        } else {
-          // Register each instance from the serialized data (standard modules)
-          for (const instance of instances) {
-            try {
-              module.register(instance.name, instance.definition);
-            } catch (error) {
-              console.error(`Failed to register ${moduleName} module instance '${instance.name}':`, error);
-            }
+        // Register each instance from the serialized data (standard modules)
+        for (const instance of instances) {
+          try {
+            module.register(instance.name, instance.definition);
+          } catch (error) {
+            console.error(`Failed to register ${moduleName} module instance '${instance.name}':`, error);
           }
         }
       } else {
@@ -229,6 +213,8 @@ export function initialize(
 
   setResource(ctx, 'nextStableId', resolveNextStableId());
 
+  syncDimensionTerrain(ctx, dimensions);
+
   // Spawn entities if defined and enabled
   if (spawnEntities) {
     // New format: Entities in dimensions[].chunks[].entities
@@ -262,6 +248,28 @@ export function initialize(
       
       // Restore deferred entity references
       restoreDeferredEntityReferences(ctx);
+    }
+  }
+
+  // Restore spawner module instances after declared entities and stable IDs are initialized,
+  // because spawner restoration may execute and create owned entities.
+  if (definition.modules?.spawner) {
+    const spawnerMod = getModule<SpawnerModule>(ctx, 'spawner');
+    if (spawnerMod) {
+      spawnerMod.refreshTerrainSettings();
+
+      for (const instance of definition.modules.spawner as Array<{ name: string; definition: any; isExecuted?: boolean; waveState?: any }>) {
+        try {
+          const savedState = instance.isExecuted || instance.waveState
+            ? { isExecuted: instance.isExecuted, waveState: instance.waveState }
+            : undefined;
+          spawnerMod.registerSpawner(instance.definition, savedState);
+        } catch (error) {
+          console.error(`Failed to restore spawner '${instance.name}':`, error);
+        }
+      }
+    } else {
+      console.warn("Module 'spawner' not found, skipping module instance restoration");
     }
   }
 

@@ -1,4 +1,5 @@
 import type { FieldMetadata } from './FieldMetadata';
+import { FieldDefinitionSchema } from './ModuleSchemas';
 
 export interface WorldSchemaGroup {
   name: string;
@@ -254,14 +255,28 @@ export const WorldDimensionsSchema: WorldSchema = {
             type: 'object',
             required: false,
             label: 'Terrain',
-            description: 'Height sampling defaults for spawners',
+            description: 'Dimension-owned terrain mesh, collision, and height sampling',
             sectionStyle: 'inspector',
             fields: {
+              enabled: {
+                name: 'enabled',
+                type: 'boolean',
+                required: false,
+                label: 'Enabled',
+                defaultValue: true,
+              },
               heightField: {
                 name: 'heightField',
-                type: 'string',
+                type: 'moduleReference',
                 required: false,
                 label: 'Height Field',
+                moduleName: 'field',
+                referenceMode: 'instance',
+                allowCreateInstance: true,
+                allowEditInstance: true,
+                popoutMode: 'left',
+                compactFields: ['params.amplitude', 'params.frequency', 'params.octaves', 'params.seed'],
+                fields: FieldDefinitionSchema.fields,
               },
               size: {
                 name: 'size',
@@ -272,6 +287,16 @@ export const WorldDimensionsSchema: WorldSchema = {
                 step: 1,
                 defaultValue: 100,
               },
+              resolution: {
+                name: 'resolution',
+                type: 'number',
+                required: false,
+                label: 'Resolution',
+                min: 8,
+                max: 512,
+                step: 8,
+                defaultValue: 128,
+              },
               heightOffset: {
                 name: 'heightOffset',
                 type: 'number',
@@ -279,6 +304,36 @@ export const WorldDimensionsSchema: WorldSchema = {
                 label: 'Height Offset',
                 step: 0.1,
                 defaultValue: 0,
+              },
+              collider: {
+                name: 'collider',
+                type: 'boolean',
+                required: false,
+                label: 'Collider',
+                defaultValue: true,
+              },
+              water: {
+                name: 'water',
+                type: 'object',
+                required: false,
+                label: 'Water',
+                fields: {
+                  enabled: {
+                    name: 'enabled',
+                    type: 'boolean',
+                    required: false,
+                    label: 'Enabled',
+                    defaultValue: false,
+                  },
+                  height: {
+                    name: 'height',
+                    type: 'number',
+                    required: false,
+                    label: 'Height',
+                    step: 0.1,
+                    defaultValue: 0,
+                  },
+                },
               },
             },
           },

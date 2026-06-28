@@ -9,8 +9,13 @@
  * - Phase 5: Wave spawner with runtime control and serialization
  */
 
+import { addComponent, defineQuery, hasComponent } from "bitecs";
 import { ECSContext, getModule, getResource } from "../../core/ecs";
 import { spawn } from "../../core/spawn";
+import { despawn } from "../../core/despawn";
+import { entityExists } from "../../core/memory";
+import { SpawnerOwned } from "../../core/components/SpawnerOwned";
+import { decode, writeEncodedString } from "../../utils/strings";
 import { Module } from "../Module";
 import type { WorldMetadata } from "../../core/schema";
 import { TriggerModule, triggerModule } from "../trigger";
@@ -509,6 +514,51 @@ interface SpawnerState {
   loopTriggerName?: string; // Name of the loop trigger for wave spawners with loop enabled
 }
 
+const spawnerOwnedQuery = defineQuery([SpawnerOwned]);
+
+function markSpawnerOwned(ctx: ECSContext, eid: number, spawnerName: string): void {
+  if (!hasComponent(ctx, SpawnerOwned, eid)) {
+    addComponent(ctx, SpawnerOwned, eid);
+  }
+  writeEncodedString(SpawnerOwned.spawnerName[eid], spawnerName);
+}
+
+function getOwnedSpawnerEntityIds(ctx: ECSContext, spawnerName: string): number[] {
+  return Array.from(spawnerOwnedQuery(ctx)).filter((eid) =>
+    decode(SpawnerOwned.spawnerName[eid]) === spawnerName,
+  );
+}
+
+function transformReferencesHeightField(
+  transform: TransformOverride | undefined,
+  heightFieldName: string,
+): boolean {
+  if (!transform) return false;
+  return ['x', 'y', 'z'].some((axis) => {
+    const value = transform[axis as keyof TransformOverride] as any;
+    return value && typeof value === 'object' && value.field === heightFieldName;
+  });
+}
+
+function constraintsReferenceHeightField(
+  constraints: Constraint[] | undefined,
+  heightFieldName: string,
+): boolean {
+  return (constraints ?? []).some((constraint) => {
+    const typed = constraint as any;
+    return typed.field === heightFieldName || typed.params?.field === heightFieldName;
+  });
+}
+
+function spawnerReferencesHeightField(definition: SpawnerDefinition, heightFieldName: string): boolean {
+  const params = definition.params as BaseSpawnerParams;
+  return (
+    params.heightField === heightFieldName ||
+    constraintsReferenceHeightField(params.constraints, heightFieldName) ||
+    transformReferencesHeightField(params.transform, heightFieldName)
+  );
+}
+
 export interface SpawnerModuleDefinition {
   type: string;
   params: any;
@@ -586,6 +636,40 @@ export class SpawnerModule extends Module<SpawnerModuleDefinition, SpawnerState>
     
     // Pull terrain settings from dimension configuration
     this._terrainSettings = getTerrainSettings(ctx);
+  }
+
+  private markResultOwned(spawnerName: string, result: SpawnerResult | undefined): void {
+    for (const eid of result?.entityIds ?? []) {
+      if (entityExists(this.ctx, eid)) {
+        markSpawnerOwned(this.ctx, eid, spawnerName);
+      }
+    }
+  }
+
+  private clearOwnedOutput(spawnerName: string): void {
+    const state = this.spawnerStates.get(spawnerName);
+    const entityIds = new Set<number>([
+      ...(state?.result?.entityIds ?? []),
+      ...getOwnedSpawnerEntityIds(this.ctx, spawnerName),
+    ]);
+
+    for (const eid of entityIds) {
+      if (!entityExists(this.ctx, eid)) continue;
+      try {
+        despawn(this.ctx, eid);
+      } catch (error) {
+        console.warn(`Failed to despawn previous output for spawner '${spawnerName}':`, error);
+      }
+    }
+
+    if (state) {
+      state.result = undefined;
+    }
+  }
+
+  private hasOwnedOutput(spawnerName: string): boolean {
+    const state = this.spawnerStates.get(spawnerName);
+    return (state?.result?.entityIds?.length ?? 0) > 0 || getOwnedSpawnerEntityIds(this.ctx, spawnerName).length > 0;
   }
   
   /**
@@ -874,6 +958,30 @@ export class SpawnerModule extends Module<SpawnerModuleDefinition, SpawnerState>
       this.execute(normalized.params.name);
     }
   }
+
+  upsertSpawner(def: SpawnerDefinition): void {
+    if (!def.params || typeof def.params !== 'object' || !def.params.name) {
+      throw new Error('Spawner definition must have params.name');
+    }
+
+    const name = def.params.name;
+    this.clearOwnedOutput(name);
+    this.spawnerStates.delete(name);
+    if (this.hasDefinition(name)) {
+      this.unregister(name);
+    }
+    this.registerSpawner(def);
+  }
+
+  removeSpawner(name: string): boolean {
+    const exists = this.spawnerStates.has(name) || this.hasDefinition(name);
+    this.clearOwnedOutput(name);
+    this.spawnerStates.delete(name);
+    if (this.hasDefinition(name)) {
+      this.unregister(name);
+    }
+    return exists;
+  }
   
   /**
    * Override register to support spawner-specific types
@@ -929,6 +1037,7 @@ export class SpawnerModule extends Module<SpawnerModuleDefinition, SpawnerState>
     
     state.result = result;
     state.isExecuted = true;
+    this.markResultOwned(name, result);
     
     // For wave spawners, track which delay=0 waves were executed and set next wave index
     if (def.type === 'composite' && (def.params as CompositeParams).schedule && state.waveState) {
@@ -956,6 +1065,28 @@ export class SpawnerModule extends Module<SpawnerModuleDefinition, SpawnerState>
     }
     
     return result;
+  }
+
+  /**
+   * Regenerate immediate spawner outputs that depend on a terrain height field.
+   */
+  resyncTerrainHeightField(heightFieldName: string): void {
+    this.refreshTerrainSettings();
+
+    for (const [name, state] of this.spawnerStates) {
+      if (!spawnerReferencesHeightField(state.definition, heightFieldName)) continue;
+      if (state.isExecuted && !state.result && !this.hasOwnedOutput(name)) continue;
+
+      this.clearOwnedOutput(name);
+      state.isExecuted = false;
+
+      const params = state.definition.params as BaseSpawnerParams;
+      const hasTrigger = state.definition.type === 'composite' && Boolean((params as CompositeParams).trigger);
+      const shouldExecuteImmediately = params.immediate !== false && !hasTrigger;
+      if (shouldExecuteImmediately) {
+        this.execute(name);
+      }
+    }
   }
   
   /**
@@ -1012,8 +1143,9 @@ export class SpawnerModule extends Module<SpawnerModuleDefinition, SpawnerState>
         definition: state.definition as SpawnerModuleDefinition,
       };
       
-      // Include isExecuted state for all spawners to prevent re-execution on load
-      if (state.isExecuted) {
+      // Spawner-owned outputs are generated from the definition, so save the definition
+      // and let it execute on load instead of freezing generated entities into chunks.
+      if (state.isExecuted && !this.hasOwnedOutput(name)) {
         entry.isExecuted = true;
       }
       
@@ -1231,6 +1363,7 @@ export class SpawnerModule extends Module<SpawnerModuleDefinition, SpawnerState>
       terrainSize,
       heightOffset
     );
+    this.markResultOwned(name, result);
     
     // Merge result with existing spawner result
     if (state.result) {
@@ -1390,6 +1523,7 @@ export class SpawnerModule extends Module<SpawnerModuleDefinition, SpawnerState>
       terrainSize,
       heightOffset
     );
+    this.markResultOwned(spawnerName, result);
     
     // Accumulate results
     if (!state.result) {

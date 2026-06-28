@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { ECSContext, getModule, getResource, setResource } from './ecs';
 import { Module } from '../modules/Module';
+import { syncDimensionTerrain } from './dimensionTerrain';
+import type { WorldMetadata } from './schema';
 
 export interface RuntimeModuleTypeDefinition {
   moduleName: string;
@@ -89,6 +91,24 @@ function getTargetModule(ctx: ECSContext, moduleName: string): Module<any, any> 
     throw new Error(`Module '${moduleName}' not found`);
   }
   return target;
+}
+
+function syncReferencedDimensionTerrainField(
+  ctx: ECSContext,
+  moduleName: string,
+  instanceName: string,
+): void {
+  if (moduleName !== 'field') return;
+  const metadata = getResource<WorldMetadata>(ctx, 'metadata', true);
+  if (!metadata?.dimensions) return;
+  const isReferencedTerrainField = metadata.dimensions.some(
+    (dimension) => dimension.terrain?.heightField === instanceName,
+  );
+  if (isReferencedTerrainField) {
+    syncDimensionTerrain(ctx, metadata.dimensions);
+    const spawnerModule = getModule<any>(ctx, 'spawner', true);
+    spawnerModule?.resyncTerrainHeightField?.(instanceName);
+  }
 }
 
 function buildFactoryHelpers(
@@ -304,7 +324,20 @@ export function upsertRuntimeModuleInstance(
       `Cannot overwrite built-in module instance '${normalizedModuleName}:${normalizedInstanceName}' through the runtime extensibility API`,
     );
   }
-  targetModule.register(normalizedInstanceName, definition as any);
+  if (normalizedModuleName === 'spawner' && typeof (targetModule as any).upsertSpawner === 'function') {
+    const spawnerDefinition = {
+      ...(definition as any),
+      params: {
+        ...(definition as any).params,
+        name: (definition as any).params?.name ?? normalizedInstanceName,
+      },
+    };
+    (targetModule as any).upsertSpawner(spawnerDefinition);
+    return;
+  }
+  targetModule.replaceDefinition(normalizedInstanceName, definition as any);
+  targetModule.resolve(normalizedInstanceName);
+  syncReferencedDimensionTerrainField(ctx, normalizedModuleName, normalizedInstanceName);
 }
 
 export function removeRuntimeModuleInstance(
@@ -324,7 +357,14 @@ export function removeRuntimeModuleInstance(
       `Cannot remove built-in module instance '${normalizedModuleName}:${normalizedInstanceName}' through the runtime extensibility API`,
     );
   }
-  return targetModule.unregister(normalizedInstanceName);
+  const removed =
+    normalizedModuleName === 'spawner' && typeof (targetModule as any).removeSpawner === 'function'
+      ? (targetModule as any).removeSpawner(normalizedInstanceName)
+      : targetModule.unregister(normalizedInstanceName);
+  if (removed) {
+    syncReferencedDimensionTerrainField(ctx, normalizedModuleName, normalizedInstanceName);
+  }
+  return removed;
 }
 
 export function listRuntimeModuleInstances(ctx: ECSContext): RuntimeModuleInstanceCatalogEntry[] {

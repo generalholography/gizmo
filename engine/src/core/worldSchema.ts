@@ -5,6 +5,7 @@
 
 import type { ArchetypeBundle } from '../modules/archetype';
 import type { ConditionDefinition } from '../modules/condition';
+import type { FieldDefinition } from '../modules/field';
 import type { SpawnerDefinition, SpawnerDefaults } from '../modules/spawner';
 import type { ParticleEmitter, Vector3 } from './schema';
 
@@ -234,9 +235,18 @@ export interface DimensionDefinition {
   
   /** Terrain settings (optional) */
   terrain?: {
-    heightField: string;
-    size: number;
+    enabled?: boolean;
+    heightField: string | FieldDefinition;
+    size: number | { x: number; z: number };
+    resolution?: number;
     heightOffset?: number;
+    material?: any;
+    collider?: boolean;
+    water?: {
+      enabled: boolean;
+      height?: number;
+      material?: any;
+    };
   };
   
   /** 
